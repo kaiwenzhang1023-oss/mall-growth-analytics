@@ -74,7 +74,7 @@ chi2, p_chi, dof, expected = chi2_contingency(table)
 print("\n==== 卡方检验（CVR 显著性） ====")
 print(f"卡方统计量={chi2:.4f}，p值={p_chi:.4f}")
 if p_chi < ALPHA:
-    print(f"结论：p<{ALPHA}，CVR 差异【统计显著】，新策略正向有效")
+    print(f"结论：p<{ALPHA}，模拟样本 CVR 差异【统计显著】；不代表真实策略因果有效")
 else:
     print(f"结论：p>={ALPHA}，CVR 差异不显著，上涨可能是随机波动，不建议全量")
 
@@ -114,7 +114,7 @@ print(f"对照组 {ref_c:.2%}，实验组 {ref_t:.2%}")
 
 print("\n==== 实验最终决策 ====")
 if p_chi < ALPHA and p_t < ALPHA and ref_t <= ref_c + 0.015:
-    print("✅ 核心指标显著正向、护栏风险可控 → 全量上线，纳入常态化推荐")
+    print("✅ 模拟指标显著且演示护栏满足阈值 → 仅可进入真实实验有效性复核，不构成真实全量上线决定")
 elif p_chi >= ALPHA:
     print("⚠️ CVR 提升不显著 → 不全量，迭代召回规则后重新开实验")
 else:
