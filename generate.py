@@ -10,12 +10,29 @@ R = random.Random(20261107)
 CATS = ['头盔','护具','行车记录仪','配件耗材','骑行服','骑行裤','骑行靴']
 CARS = ['仿赛','巡航','拉力','踏板']
 SCENES = ['首页推荐流','商城搜索','活动入口','车型专区','购物车推荐','社区挂载']
+# October pre-sale and November promotions lift the off-season.
+# June promotions and the summer rebound have different strengths by year.
 SEASONS = [
-    ('2022-10',[608,537,496,438,375,462],365000,5847,601,930,[21,75,128,174],112000,990,140),
-    ('2023-04',[718,864,987,1089,1126,898],600000,12174,1198,1200,[37,121,193,267],240000,1920,180),
-    ('2023-10',[1068,943,876,804,742,1032],532000,10083,985,1510,[44,149,248,332],160000,2304,230),
-    ('2024-04',[1756,2073,2318,2564,2731,2502],960000,24631,2321,2400,[101,319,509,679],360000,6840,350),
+    ('2022-10',[581,677,514,372,313,459],365000,5847,601,930,[21,75,128,174],112000,990,140),
+    ('2023-04',[752,901,1158,986,1065,820],600000,12174,1198,1200,[37,121,193,267],240000,1920,180),
+    ('2023-10',[1116,1285,1018,703,602,741],532000,10083,985,1510,[44,149,248,332],160000,2304,230),
+    ('2024-04',[1936,2229,2867,2143,2471,2298],960000,24631,2321,2400,[101,319,509,679],360000,6840,350),
 ]
+
+# Relative weights within each season. Each row is visits, paid orders, refund risk,
+# and apparel mix. Seasonal budgets still control totals; event months may differ.
+CAMPAIGNS = {
+    '2022-10': (115, 96, 105, 110),
+    '2022-11': (120, 112, 118, 135),
+    '2022-12': (108, 105, 108, 113),
+    '2023-06': (122, 111, 117, 134),
+    '2023-07': (94, 99, 98, 100),
+    '2023-10': (115, 97, 104, 107),
+    '2023-11': (111, 119, 103, 83),
+    '2023-12': (108, 103, 113, 121),
+    '2024-06': (120, 125, 110, 114),
+    '2024-07': (96, 98, 97, 100),
+}
 
 def month_at(start, offset):
     year, month = map(int, start.split('-'))
@@ -45,9 +62,10 @@ def main():
     for start, gmvs, visits, paid, refunds, size, repeat, rec_visits, rec_paid, rec_share in SEASONS:
         months = [month_at(start,i) for i in range(6)]
         month_keys = [str(m)[:7] for m in months]
-        v = allocate(visits,[x*R.randint(92,108) for x in gmvs])
-        p = allocate(paid,[x*R.randint(92,108) for x in gmvs])
-        f = allocate(refunds,[x*R.randint(93,107) for x in p])
+        profiles = [CAMPAIGNS.get(key,(100,100,100,100)) for key in month_keys]
+        v = allocate(visits,[x*profile[0]*R.randint(97,103) for x,profile in zip(gmvs,profiles)])
+        p = allocate(paid,[x*profile[1]*R.randint(97,103) for x,profile in zip(gmvs,profiles)])
+        f = allocate(refunds,[x*profile[2]*R.randint(98,102) for x,profile in zip(p,profiles)])
         rv = allocate(rec_visits,[x*R.randint(94,106) for x in v])
         rp = allocate(rec_paid,[x*R.randint(92,108) for x in rv])
         share = [rec_share + delta for delta in [-23,-8,4,14,21,-8]]
@@ -93,6 +111,8 @@ def main():
             gmv = gmvs[i]*100000
             rgmv = gmv*share[i]//1000
             cents_by_scene = [rgmv,*allocate(gmv-rgmv,paid_by_scene[1:])]
+            category_weights = [w*(profiles[i][3] if j>=4 else 100)
+                                for j,w in enumerate([25,15,13,20,14,7,6])]
             orders=[]
             visit_buckets=[]
             for scene, nvisits, npaid, cents in zip(range(len(SCENES)),visits_by_scene,paid_by_scene,cents_by_scene):
@@ -102,7 +122,7 @@ def main():
                 weights=[R.randint(65,165) for _ in people]
                 amounts=allocate(cents,weights)
                 for (user,dt),amount in zip(people,amounts):
-                    cat=R.choices(range(len(CATS)),[25,15,13,20,14,7,6])[0]
+                    cat=R.choices(range(len(CATS)),category_weights)[0]
                     car=R.randrange(len(CARS))
                     sku=cat*30+R.choices(range(30),[31-j for j in range(30)])[0]
                     touches = [R.randrange(len(SCENES)) for _ in range(R.choices([0,1,2],[40,43,17])[0])]
