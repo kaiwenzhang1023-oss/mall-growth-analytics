@@ -179,17 +179,23 @@ function historicalResults() {
     ['推荐场景 GMV 月占比均值',18,35,'share',false],
     ['推荐流成单率',0.8,1.9,'recommendation',false]
   ]]);
-  const rows=measures.map(([group,values])=>`<tbody><tr class="result-group"><th colspan="4" scope="rowgroup">${group}</th></tr>${values.map(([label,before,after,kind,lowerIsBetter])=>{
+  const resultTable=([group,values])=>`<div class="growth-tables result-scroll"><table class="tbl result-table" aria-label="${group}"><thead><tr><th scope="col">指标</th><th scope="col">优化前</th><th scope="col">优化后</th><th scope="col">变化</th></tr></thead><tbody>${values.map(([label,before,after,kind,lowerIsBetter])=>{
     const change=after-before;
-    const formatted=kind==='amount'?pct(ratio(change,before)):pp(change/100);
+    const formatted=kind==='amount'?`+${change.toFixed(2)} 万元（+${pct(ratio(change,before))}）`:pp(change/100);
     const format=n=>kind==='amount'?n.toFixed(2)+' 万元':n.toFixed(kind==='share'?0:kind==='recommendation'?1:2)+'%';
     const favorable=lowerIsBetter?change<0:change>0;
-    return `<tr><th scope="row">${label}</th><td class="result-before">${format(before)}</td><td><strong>${format(after)}</strong></td><td><span class="result-delta" data-favorable="${favorable}">${change>=0?'▲':'▼'} ${change>0&&!formatted.startsWith('+')?'+':''}${formatted}</span></td></tr>`;
-  }).join('')}</tbody>`).join('');
-  return panel('历史项目成果',`<p class="growth-note">完整经营年对比 2022.10–2023.09 与 2023.10–2024.09。旺季为 4–9 月，淡季为 10 月至次年 3 月。</p>
-    <div class="growth-tables"><table class="tbl result-table"><thead><tr><th scope="col">经营指标</th><th scope="col">优化前</th><th scope="col">优化后</th><th scope="col">变化</th></tr></thead>${rows}</table></div>
-    <p class="growth-note">注：本模块指标基于作者历史真实操盘业务同比例脱敏核算，独立展示个人业务成果，不与下方演示看板的模拟数据集混算。</p>
-    <div class="growth-switch"><a class="result-link" href="#module-03" data-tab="2">查看模拟复购分段 →</a><a class="result-link" href="#module-06" data-tab="5" data-case-year>查看模拟触点对比 →</a></div>`);
+    return `<tr><th scope="row"><button type="button" class="result-metric" data-bi-metric="历史 · ${label}" aria-expanded="false">${label} <span aria-hidden="true">ⓘ</span></button></th><td class="result-before">${format(before)}</td><td><strong>${format(after)}</strong></td><td><span class="result-delta" data-favorable="${favorable}">${formatted}</span></td></tr>`;
+  }).join('')}</tbody></table></div>`;
+  return panel('历史项目成果',`<p class="growth-note">本板块为本人历史真实操盘业务成果。对比周期：优化前 2022.10–2023.09｜优化后 2023.10–2024.09。旺季为 4–9 月，淡季为 10 月至次年 3 月。数据经过脱敏比例核算，与下方模拟看板独立展示。</p>
+    <p class="result-insight"><strong>核心洞察：通过推荐体系重构、用户分层与召回策略组合优化，实现 GMV、转化、复购同步抬升，同时持续控制退款率下行。</strong></p>
+    <section class="result-section"><h3>大盘经营提升</h3>
+    ${measures.slice(0,3).map((measure,i)=>`<details class="result-period"${i===0?' open':''}><summary>${measure[0]}</summary>${resultTable(measure)}</details>`).join('')}
+    </section>
+    <section class="result-section"><h3>推荐策略专项贡献（完整经营年）</h3>
+    <p class="growth-note">本部分展示推荐链路对大盘增长的专项拉动效果。</p>${resultTable(measures[3])}</section>
+    <p class="growth-note">注：所有指标基于历史业务脱敏核算，与交互看板模拟数据集独立展示。</p>
+    <div class="growth-switch"><a class="result-link" href="#module-03" data-tab="2">查看模拟复购分段 →</a><a class="result-link" href="#module-06" data-tab="5" data-case-year>查看模拟触点对比 →</a></div>
+    <p class="growth-note">跳转页面为仿真演示数据。</p>`);
 }
 function home() {
   const questions=[

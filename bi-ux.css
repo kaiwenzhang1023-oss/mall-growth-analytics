@@ -182,8 +182,8 @@ main > .notice { margin-bottom:14px; }
 .experiment-caution { color:#805118; }
 
 /* 能力入口使用真实链接，明确键盘焦点和跳转反馈。 */
-/* 技能区独占一行，窄屏可横向滑动，保留链接完整文案。 */
-.project-skills,.project-pipeline { grid-column:1/-1; min-width:0; }
+/* 两列独立收缩。窄屏各占一行，行内节点可以横滑。 */
+.project-skills,.project-pipeline { min-width:0; }
 .skill-links { display:flex; gap:6px; padding:3px; margin:-3px; overflow-x:auto; list-style:none; }
 .skill-links li { flex:none; white-space:nowrap; }
 .skill-links a,.result-link { display:inline-flex; align-items:center; gap:8px; padding:6px 9px; border:1px solid #d7e2ec; border-radius:6px; color:#244769; text-decoration:none; background:#f5f9fd; transition:transform .16s ease,background .16s ease,border-color .16s ease; }
@@ -198,11 +198,11 @@ main > .notice { margin-bottom:14px; }
 .module-card:hover .module-arrow { transform:translateX(2px); }
 #title { scroll-margin-block-start:12px; }
 
-/* 流水线以编号节点和连接线表达次序，窄屏改用纵向流。 */
-.data-flow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:15px; }
-.data-flow li { display:grid; gap:4px; align-content:start; position:relative; min-width:0; font-size:13px; }
+/* 节点和能力标签使用同一字号、边框和高度。 */
+.project-overview .data-flow { flex-wrap:nowrap; gap:12px; padding:0 0 2px; overflow-x:auto; }
+.data-flow li { display:inline-flex; flex:none; align-items:center; gap:5px; position:relative; padding:4px 7px; border-color:#d7e2ec; border-radius:6px; background:#f5f9fd; color:#244769; font-size:13px; line-height:1.45; white-space:nowrap; }
 .pipeline-index { color:#426487; font-variant-numeric:tabular-nums; font-size:11px; font-weight:700; }
-.data-flow li+li::before { content:""; position:absolute; inset-inline-start:-16px; top:50%; width:15px; border-top:1px solid #8ba6bf; }
+.data-flow li+li::before { content:""; position:absolute; inset-inline-start:-13px; top:50%; width:12px; border-top:1px solid #8ba6bf; }
 .data-flow li+li::after { content:""; position:absolute; inset-inline-start:-6px; top:calc(50% - 2px); width:4px; height:4px; border-top:1px solid #8ba6bf; border-right:1px solid #8ba6bf; transform:rotate(45deg); }
 
 /* 战报以前后列和独立变化徽章对照，保持数字右对齐。 */
@@ -210,7 +210,19 @@ main > .notice { margin-bottom:14px; }
 .result-table th,.result-table td { text-align:right; }
 .result-table th:first-child { text-align:left; }
 .result-before { color:#596d81; }
-.result-table .result-group th { background:#f4f8fc; color:#244769; }
+/* 小表独立横滑，取消原长表的内部纵向滚动。 */
+.result-scroll { max-block-size:none; }
+.result-scroll .result-table th:not(:first-child),.result-scroll .result-table td { text-align:right; }
+.result-scroll .result-table tbody th { position:static; background:transparent; }
+.result-section { margin-block:14px; }
+.result-section + .result-section { padding-block-start:14px; border-top:1px solid #dce5ed; }
+.result-section h3 { font-size:15px; margin:0 0 8px; }
+.result-insight { margin:10px 0 14px; color:#244769; }
+.result-period { margin-block:6px; border:1px solid #dce5ed; border-radius:6px; }
+.result-period summary { padding:7px 10px; cursor:pointer; background:#f5f9fd; color:#244769; font-size:13px; font-weight:650; }
+.result-metric { padding:0; border:0; background:none; font:inherit; color:inherit; text-align:left; cursor:help; }
+.result-metric span { color:#426487; font-size:11px; }
+.result-metric:focus-visible,.result-period summary:focus-visible { outline:2px solid #315d8a; outline-offset:2px; }
 .result-delta { display:inline-block; padding:3px 7px; border-radius:999px; background:#e8f5ed; color:#17613a; font-size:12px; white-space:nowrap; }
 
 .result-delta[data-favorable="false"] { background:#faeeed; color:#9b332d; }
@@ -227,12 +239,6 @@ main > .notice { margin-bottom:14px; }
 .method-snippet { position:relative; }
 .method-snippet pre { padding:42px 12px 12px; background:#eef3f8; color:#233e58; }
 .method-copy { position:absolute; top:6px; right:6px; }
-@media(max-width:640px) {
-  .data-flow { grid-template-columns:1fr; gap:10px; }
-  .data-flow li { grid-template-columns:auto 1fr; align-items:center; }
-  .data-flow li+li::before { top:-11px; inset-inline-start:16px; height:10px; width:0; border-top:0; border-left:1px solid #8ba6bf; }
-  .data-flow li+li::after { top:-5px; inset-inline-start:14px; transform:rotate(135deg); }
-}
 @media(prefers-reduced-motion:reduce) {
   .skill-links a,.result-link,.module-card,.module-arrow,.method-chevron { transition:none; }
   .method-item[open] .method-body { animation:none; }
