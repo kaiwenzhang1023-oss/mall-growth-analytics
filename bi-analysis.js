@@ -27,7 +27,9 @@ function selectScope(months=currentMonths(),dims=dimensions()) {
 // 模拟财务字段随订单确定。全额退款；退回商品恢复成本，其余发货退款保留成本。
 function orderEconomics(o) {
   const units=1+(o[5]%5===0?1:0);
-  const cost=Math.round(o[6]*[.64,.71,.57,.69,.76,.82,.62][o[4]]);
+  // SKU 的模拟供货条件固定，避免同一品类所有商品落在一条毛利带。
+  const skuCostOffset=(((Math.imul(o[5]+1,2654435761)>>>0)%101)/100-.5)*.24;
+  const cost=Math.round(o[6]*([.64,.71,.57,.69,.76,.82,.62][o[4]]+skuCostOffset));
   const net=o[7]?0:o[6];
   return {units,net,profit:net-(o[7]===1||o[7]===3?0:cost)};
 }
@@ -69,20 +71,21 @@ function productQuadrants(orders) {
   }
   const items=[...bySku].filter(([,v])=>v.net>0).map(([id,v])=>({id,...v,margin:v.profit/v.net}));
   if(!items.length)return '<p>当前筛选没有可比较的净销售商品。</p>';
-  const median=values=>values.sort((a,b)=>a-b)[Math.floor(values.length/2)];
-  const midSales=median(items.map(x=>x.gmv)),midMargin=median(items.map(x=>x.margin));
+  // 演示目标为月均 ¥7,500、净毛利率 35%，随所选时间长度换算销售目标。
+  const [from,to]=selectedPeriod();
+  const midSales=750000*(day(to)-day(from)+1)/30.4375,midMargin=.35;
   const groups=['明星爆品','金牛引流品','高利潜力品','滞销清仓品'].map(name=>({name,items:[]}));
   for(const item of items)groups[(item.gmv<midSales?2:0)+(item.margin<midMargin?1:0)].items.push(item);
-  const xMin=Math.min(...items.map(x=>x.gmv)),xMax=Math.max(...items.map(x=>x.gmv));
-  const yMin=Math.min(...items.map(x=>x.margin)),yMax=Math.max(...items.map(x=>x.margin));
+  const xMin=0,xMax=Math.max(midSales*1.1,...items.map(x=>x.gmv));
+  const yMin=Math.min(midMargin-.05,...items.map(x=>x.margin)),yMax=Math.max(midMargin+.05,...items.map(x=>x.margin));
   const x=value=>24+352*(value-xMin)/Math.max(1,xMax-xMin);
   const y=value=>152-130*(value-yMin)/Math.max(.0001,yMax-yMin);
-  const scatter=`<svg class="sku-scatter" viewBox="0 0 400 170" role="img" aria-label="横轴 GMV，纵轴模拟净毛利率，分界为各自中位数">
+  const scatter=`<svg class="sku-scatter" viewBox="0 0 400 170" role="img" aria-label="横轴 GMV，纵轴模拟净毛利率，分界为模拟经营目标">
     <path d="M24 22V152H376" fill="none" stroke="#8196af"/>
     <path d="M${x(midSales)} 22V152 M24 ${y(midMargin)}H376" fill="none" stroke="#8196af" stroke-dasharray="4 4"/>
     ${items.map(item=>`<circle cx="${x(item.gmv)}" cy="${y(item.margin)}" r="3" fill="${item.gmv>=midSales?'#315d8a':'#087767'}"><title>SKU ${item.id} · ${money(item.gmv)} · 毛利率 ${pct(item.margin)}</title></circle>`).join('')}
   </svg>`;
-  return '<p class="growth-note">横轴按 GMV 中位数 '+money(midSales)+' 分高低，纵轴按模拟净毛利率中位数 '+pct(midMargin)+' 分高低。仅纳入净销售额为正的商品；低销低毛利组仍需结合库存周转确认清仓。</p>'+
+  return '<p class="growth-note">横轴目标为月均 GMV ¥7,500，按所选天数折算为 '+money(midSales)+'。纵轴目标为模拟净毛利率 '+pct(midMargin)+'。目标为演示假设，各组由实际模拟明细计算。仅纳入净销售额为正的商品；低销低毛利组仍需结合库存周转确认清仓。</p>'+
     scatter+'<div class="quadrant-grid">'+[2,0,3,1].map(i=>{const g=groups[i];return '<section><strong>'+g.name+' · '+fmt(g.items.length)+' 款</strong><p>'+g.items.sort((a,b)=>b.gmv-a.gmv).slice(0,3).map(x=>'SKU '+x.id+' '+money(x.gmv)).join(' · ')+'</p></section>';}).join('')+'</div>';
 }
 function salesBridge(a,b) {
@@ -105,16 +108,36 @@ function waterfall(a,b) {
     table(['驱动因素','GMV 影响','占净变化'],factors.map(([name,value])=>[name,money(value),pct(ratio(value,b.gmv-a.gmv))]))+
     '<p class="growth-note">占净变化可为负，表示抵消了部分跌幅。按流量 → 转化率 → 客单价依次替换。中间三项合计 '+money(b.gmv-a.gmv)+'，分解结果用于定位，因果判断需另行验证。</p>';
 }
+// 按同一维度计算前后期可加总的变化，避免把份额排名误当成异常贡献。
+function anomalySlices(before,after,metric) {
+  const facets=[
+    ['渠道',meta.scenes,o=>o[2]],
+    ['品类',meta.categories,o=>o[4]],
+    ['买家类型',['样本内首购订单','其他订单'],o=>firstOrder.get(o[0])===o?0:1]
+  ];
+  return facets.map(([label,names,category])=>{
+    const aggregate=orders=>{
+      const result=names.map(()=>0);
+      for(const o of orders) result[category(o)]+=metric==='refund'?Number(o[7]>0):o[6];
+      return result;
+    };
+    const a=aggregate(before.orders),b=aggregate(after.orders);
+    return '<h3>'+label+'</h3>'+table([label,'上月','本月','变化'],names.map((name,i)=>[name,a[i],b[i],b[i]-a[i]])
+      .sort((x,y)=>Math.abs(y[3])-Math.abs(x[3])).map(([name,...values])=>[name,...values.map(metric==='refund'?fmt:money)]));
+  }).join('')+'<p class="growth-note">各维度独立拆分，同一订单会同时落在一个渠道、品类和买家类型。变化用于定位排查范围，不能证明根因。</p>';
+}
 function escapeHtml(value) {
   return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
 
 // 个人浏览器台账。存储不可用时仍可在当前页面使用。
-const actionStates=['推进中','已达标','未达标归档'];
+const actionStates=['待上线','实验中','验证通过','验证失败','归档'];
+const ledgerFilters={status:'',source:''};
+const legacyStatuses={'推进中':'实验中','已达标':'验证通过','未达标归档':'归档'};
 function readActions() {
   try {
     const rows=JSON.parse(localStorage.getItem('mall-action-ledger-v1')||'[]');
-    return Array.isArray(rows)?rows.filter(x=>x&&typeof x.action==='string'):[];
+    return Array.isArray(rows)?rows.filter(x=>x&&typeof x.action==='string').map(x=>({...x,source:String(x.source||'主动分析'),status:legacyStatuses[x.status]||x.status||actionStates[0]})):[];
   } catch {return [];}
 }
 let actions=readActions();
@@ -133,34 +156,88 @@ function experimentReadout(control,test,n) {
   const span=1.96*Math.sqrt(1/test+1/control-2/n);
   return {pValue,lift:test/control-1,lo:Math.exp(logRR-span)-1,hi:Math.exp(logRR+span)-1};
 }
+// 04 与 07 共用这组全样本结果，避免交接文案与实验指标脱节。
+const recommendationExperiment={
+  name:'首页推荐改版',usersPerGroup:8000,controlPaid:55,testPaid:148,
+  controlRefunded:1,testRefunded:4,refundLimit:.015
+};
+function recommendationMetrics() {
+  const x=recommendationExperiment;
+  const control=x.controlPaid/x.usersPerGroup,test=x.testPaid/x.usersPerGroup;
+  const refundControl=x.controlRefunded/x.controlPaid,refundTest=x.testRefunded/x.testPaid;
+  return {control,test,change:test-control,refundControl,refundTest,refundChange:refundTest-refundControl,
+    refundEvents:x.controlRefunded+x.testRefunded,...experimentReadout(x.controlPaid,x.testPaid,x.usersPerGroup)};
+}
 function experimentPanel() {
-  const r=experimentReadout(55,148,8000);
+  const x=recommendationExperiment,r=recommendationMetrics();
+  const paidCell=(paid,rate)=>`${fmt(paid)} / ${fmt(x.usersPerGroup)}（${pct(rate)}）`;
+  const refundCell=(count,paid,rate)=>`${fmt(count)} / ${fmt(paid)}（${pct(rate)}）`;
   const max=Math.max(1,r.hi*1.08);
-  return panel('实验方案与统计结果',table(['设计项','当前方案'],[
-    ['实验假设','按车型适配重排推荐商品，提高用户支付率'],
-    ['分流机制','按用户分流，原排序与新排序各 8,000 人'],
+  return panel('首页推荐改版 · A/B 实验评审',`<div class="experiment-summary">
+    <span class="growth-note">独立离线模拟样本 · 全样本口径</span>
+    <h3>支付用户率显著提升，建议继续小流量验证</h3>
+    <p>对照组 <strong>${pct(r.control)}</strong> → 实验组 <strong>${pct(r.test)}</strong>，绝对提升 <strong>${pp(r.change)}</strong>。</p>
+    <p>放量判断：退款证据不足，净毛利和客诉待核验。先完成护栏复查，再决定是否扩大上线。</p>
+    <button class="btn hero-primary" data-experiment-action>记录下一轮验证计划</button>
+  </div>`)+
+  panel('实验设计',table(['设计项','当前方案'],[
+    ['实验假设','按车型适配调整首页推荐排序，提高支付用户率'],
+    ['对照组','沿用原排序'],
+    ['实验组','使用按车型适配调整后的排序'],
+    ['分流机制',`按用户 1:1 分流，每组 ${fmt(x.usersPerGroup)} 人`],
     ['实验周期','独立离线模拟样本，无实际投放日期'],
-    ['核心指标','至少支付一次的用户 UV ÷ 分组用户 UV'],
-    ['负向护栏','支付用户退款率 · 净毛利须补齐成本数据后核验']
-  ])+`<p><strong>相对提升 +${pct(r.lift)}</strong> · p-value ≈ ${r.pValue.toExponential(2)} · ${r.pValue<.05?'差异达到统计显著':'差异无统计学意义'}</p>
-    <p>95% 相对提升区间 ${pct(r.lo)} 至 ${pct(r.hi)}</p>
-    <div class="metric-track" aria-hidden="true"><i style="margin-left:${100*Math.max(0,r.lo)/max}%;width:${100*(r.hi-Math.max(0,r.lo))/max}%"></i></div>
-    <p class="notice">退款率点估计上升 0.88 个百分点。仅 5 个退款事件，净毛利护栏尚无实测值，暂不据此放量。</p>
-    <p class="growth-note">双侧两比例 z 检验；相对提升区间使用对数风险比近似。统计显著只描述该模拟样本。</p>`);
+    ['核心指标','至少支付一次的用户数 ÷ 分组用户数']
+  ])+'<p class="growth-note">本页按实验分组用户统计。首页历史成果中的推荐流成单率按推荐入口曝光访问 PV 统计。</p>')+
+  panel('实验结果',table(['核心指标','对照组','实验组','绝对变化'],[
+    ['支付用户率',paidCell(x.controlPaid,r.control),paidCell(x.testPaid,r.test),pp(r.change)]
+  ])+`<details class="matrix-detail"><summary>查看统计检验与置信区间</summary>
+    <p>相对提升 +${pct(r.lift)} · <abbr title="假设两组真实支付率相同，观察到当前或更极端差异的概率">p-value</abbr> ≈ ${r.pValue.toExponential(2)} · ${r.pValue<.05?'差异达到统计显著':'差异无统计学意义'}</p>
+    <p><abbr title="按对数风险比计算，用于量化相对提升估计的不确定性">95% 相对提升区间</abbr> +${pct(r.lo)} 至 +${pct(r.hi)}</p>
+    <div class="metric-track" aria-hidden="true"><i style="margin-left:${100*r.lo/max}%;width:${100*(r.hi-r.lo)/max}%"></i></div>
+    <p class="growth-note">双侧两比例 z 检验，显著性阈值 0.05；相对提升区间使用对数风险比近似。</p>
+  </details>`)+
+  panel('护栏与放量判断',table(['护栏','对照组','实验组','状态','复查要求'],[
+    ['支付用户退款率',refundCell(x.controlRefunded,x.controlPaid,r.refundControl),refundCell(x.testRefunded,x.testPaid,r.refundTest),
+      '<strong class="experiment-caution">证据不足，继续观察</strong>',`点估计上升 ${pp(r.refundChange)}，两组合计仅 ${r.refundEvents} 个退款事件。用相同售后观察窗复查退款增幅是否在 ${pp(x.refundLimit)} 的演示容忍线内。`],
+    ['净毛利','待补','待补','待核验','补齐分组订单成本、退款金额及优惠补贴，按同一口径比较。'],
+    ['客诉','待补','待补','待核验','补齐同一观察窗的分组客诉事件及分母，比较客诉率。']
+  ])+'<p class="growth-note">支付用户退款率 = 发生退款的支付用户数 ÷ 支付用户数。退款点估计处于演示容忍线内，仍需扩大样本验证。</p>');
+}
+function experimentHandoff() {
+  const x=recommendationExperiment,r=recommendationMetrics();
+  return {
+    source:'04 · 策略实验',
+    evidence:`${x.name}：支付用户率 ${pct(r.control)} → ${pct(r.test)}（${pp(r.change)}，差异显著）；退款率点估计 ${pp(r.refundChange)}，合计 ${r.refundEvents} 个退款事件。净毛利与客诉待核验。`,
+    draft:{
+      action:'保持小流量验证，扩大退款观察样本，补齐两组净毛利与客诉数据后复评放量。',
+      kpi:`复查支付用户率与显著性；同窗核验退款率增幅 ≤${pp(x.refundLimit)}；确认净毛利与客诉达到预先约定的阈值。`
+    }
+  };
 }
 function caseReview() {
-  return panel('从策略选择到经营复盘',table(['复盘步骤','正向案例 · 车型适配推荐','止损案例 · 退款风险情景'],[
+  return panel('推荐复盘 · 正向案例与止损情景',table(['复盘步骤','正向案例 · 车型适配推荐','止损案例 · 退款风险情景'],[
     ['业务痛点','推荐曝光后支付转化弱','转化上升，但售后可能抵消收益'],
-    ['策略设计','按车型适配召回并重排商品','保留原排序对照，检查高退款品类'],
-    ['上线验证','对照组与实验组按用户分流','若退款率超护栏或净毛利下降，暂停放量'],
+    ['诊断假设','车型适配不足可能影响下单','退款集中于部分品类，需核对订单量和退款率'],
+    ['实施方案','按车型适配召回并重排商品','保留原排序对照，检查高退款品类'],
+    ['预期目标','提高支付用户率，退款增幅不超过 1.50 个百分点','退款或净毛利护栏未通过时暂停放量'],
+    ['执行验证','对照组与实验组按用户分流，各 8,000 人','将退款和履约损失纳入复核'],
+    ['数据结果','模拟支付用户率 0.69% → 1.85%，退款事件仅 5 个','假设净毛利增量低于新增投入，触发止损复查'],
     ['ROI 与收益','增量净毛利扣除新增投入后 ÷ 新增投入','对比退款损失、履约成本与转化增量'],
     ['反思','识别收益集中在哪些车型与入口','优先核验退款原因和观察窗，再决定是否重试']
   ])+'<p class="growth-note">右列为假设止损情景。ROI 需要实测增量净毛利和新增投入，当前案例不具备实测 ROI。演算示例：若新增净毛利 ¥12,000、投入 ¥8,000，则 ROI 为 50%；若净毛利仅 ¥6,000，同样投入下 ROI 为 −25%。</p>'+
-  '<button class="btn" id="open-method-drawer">查看底层 Pandas / 算法逻辑</button><dialog class="method-drawer" id="method-drawer" aria-labelledby="method-drawer-title"><form method="dialog"><button class="btn">关闭</button></form><h3 id="method-drawer-title">成交归因 · Pandas 参考实现</h3><pre></pre></dialog>');
+  '<button class="btn" data-case-action>将复盘结论加入行动台账</button> <button class="btn" id="open-method-drawer">查看底层 Pandas / 算法逻辑</button><dialog class="method-drawer" id="method-drawer" aria-labelledby="method-drawer-title"><form method="dialog"><button class="btn">关闭</button></form><h3 id="method-drawer-title">成交归因 · Pandas 参考实现</h3><pre></pre></dialog>');
 }
 function actionLedger() {
-  return panel('经营行动台账',actions.length?table(['行动动作','问题来源','责任类目／角色','验收指标','复查日','推进状态'],actions.map((r,i)=>[
-    escapeHtml(r.action),escapeHtml(r.source),escapeHtml(r.owner),escapeHtml(r.kpi),escapeHtml(r.due),
-    `<select data-action-status="${i}" aria-label="行动 ${i+1} 推进状态">${actionStates.map(label=>`<option${label===r.status?' selected':''}>${label}</option>`).join('')}</select>`
-  ]))+'<p class="growth-note">台账保存在当前浏览器。勾选趋势标记的行动按关联月份定位，便于复查同期经营变化。</p>':'<p>暂无记录。可从 04 实验或 05 诊断带入证据。</p>');
+  const sources=[...new Set(actions.map(r=>r.source))];
+  const options=(values,current)=>values.map(x=>`<option${x===current?' selected':''}>${escapeHtml(x)}</option>`).join('');
+  const rows=actions.flatMap((r,i)=>{
+    if((ledgerFilters.status&&r.status!==ledgerFilters.status)||(ledgerFilters.source&&r.source!==ledgerFilters.source))return [];
+    const source=/^0[456]/.test(r.source)?`<button class="linkbtn" data-action-source="${i}">${escapeHtml(r.source)} →</button>`:escapeHtml(r.source);
+    return [[escapeHtml(r.action),source,escapeHtml(r.evidence||'—'),escapeHtml(r.owner),escapeHtml(r.kpi),escapeHtml(r.benefit||'待量化'),escapeHtml(r.due),
+      `<select data-action-status="${i}" aria-label="行动 ${i+1} 推进状态">${options(actionStates,r.status)}</select>`]];
+  });
+  return panel('经营行动台账',`<div class="ledger-filters"><label>推进状态<select class="inputbox" data-ledger-filter="status"><option value="">全部</option>${options(actionStates,ledgerFilters.status)}</select></label>
+    <label>来源模块<select class="inputbox" data-ledger-filter="source"><option value="">全部</option>${options(sources,ledgerFilters.source)}</select></label></div>`+
+    (rows.length?table(['行动动作','问题来源','问题简述','责任类目／角色','验收指标','预期收益','复查日','推进状态'],rows):'<p>当前没有匹配的行动记录。可从 04 实验、05 诊断或 06 复盘带入证据。</p>')+
+    '<p class="growth-note">台账保存在当前浏览器。点击问题来源可回看原分析；勾选趋势标记的行动按关联月份定位。</p>');
 }

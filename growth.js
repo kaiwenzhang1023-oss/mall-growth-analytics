@@ -167,7 +167,12 @@ function home() {
     <p class="portfolio-role">项目经历 2022.03–2024.12 · 交互演示使用 2022.10–2024.09 模拟数据</p>
     <div class="hero-actions"><button class="btn hero-primary" data-tab="0">进入经营总览</button><button class="btn" data-tab="5" data-case-year>查看推荐增长案例</button></div>
   </section>
-  ${panel('业务背景与我的职责','<p>服务商城运营、类目操盘手与分析师，贯通日常看盘、大促复盘、策略验证和异常处置。</p><p><strong>个人职责</strong> · 数据仿真、指标建模、策略实验与闭环沉淀。<br><strong>核心价值</strong> · 用同口径拆解经营变化，将证据转成可验收的经营行动。</p><div class="growth-switch capability-tags"><span>指标体系构建</span><span>互斥漏斗建模</span><span>A/B 统计检验</span><span>RFM 分群</span><span>异常归因</span></div><ol class="data-flow"><li>原始日志</li><li>Pandas 清洗聚合</li><li>业务指标层</li><li>决策看板</li></ol><p class="notice">看板使用仿真数据复现经营链路，历史项目成果独立列示。</p>')}
+  ${panel('项目概述与交付范围',`<div class="project-overview">
+    <section><h3>业务背景</h3><p>面向摩托装备商城，为运营、类目操盘手、分析师提供一站式经营决策看板，定位流失、验证增长策略，支撑大促复盘与异常处置。</p></section>
+    <section><h3>我的职责</h3><p>独立完成数据集仿真、指标体系设计、互斥转化漏斗建模、实验方案设计与复盘闭环，把经营问题量化，输出可落地、可验收的经营动作。</p></section>
+    <section><h3>业务建模能力</h3><div class="growth-switch capability-tags"><span>指标体系构建</span><span>互斥漏斗建模</span><span>A/B 统计检验</span><span>RFM 用户分群</span><span>异常归因</span></div></section>
+    <section><h3>数据加工链路</h3><ol class="data-flow"><li>原始日志</li><li>Pandas 清洗聚合</li><li>业务指标层</li><li>决策看板</li></ol></section>
+    </div><p class="notice">看板使用仿真数据复现经营链路，历史项目成果独立列示。</p>`)}
   ${panel('历史项目成果',`<div class="result-lead"><span>旺季月均成交额</span><strong>94.7 万元 → 232.4 万元</strong><span>约 +145%</span></div>
     <p class="growth-note">前期经营年 2022.10–2023.09 · 后期经营年 2023.10–2024.09。每年 4–9 月为旺季，其余为淡季。</p>`+
     table(['周期','月均成交额','成单率','支付订单退款率','首购后 90 日复购率'],summary)+
@@ -221,11 +226,12 @@ function funnel(s) {
     ['立即购买',directIntent,directPlaced,directPaid]
   ];
   const pv=n=>'PV '+fmt(n);
-  const rates=(n,base)=>`<span>相对上一步 ${pct(ratio(n,base))}（${fmt(n)} ÷ ${fmt(base)}）</span>
-    <span>相对曝光 ${pct(ratio(n,s.visits))}（${fmt(n)} ÷ ${fmt(s.visits)}）</span>`;
+  const rates=(n,base)=>`<div class="funnel-rates">
+    <span class="rate-step">上一层转化率：<b>${pct(ratio(n,base))}</b>（${fmt(n)} ÷ ${fmt(base)}）</span>
+    <span class="rate-total">占初始曝光：<b>${pct(ratio(n,s.visits))}</b>（${fmt(n)} ÷ ${fmt(s.visits)}）</span></div>`;
   const stage=(label,n,base)=>`<li><div class="funnel-shape" aria-hidden="true" style="--stage-width:${100*(ratio(n,s.visits)||0)}%"></div>
     <div class="funnel-label"><strong>${label}</strong><span>${pv(n)}</span></div>
-    <div class="funnel-rates">${base==null?'漏斗起点 · 相对曝光 '+pct(ratio(n,s.visits)):rates(n,base)}</div></li>`;
+    ${base==null?`<div class="funnel-rates"><span class="rate-total">漏斗起点 · 占初始曝光：${pct(ratio(n,s.visits))}</span></div>`:rates(n,base)}</li>`;
   const graphic=`<ol class="funnel-steps pyramid">
     ${stage('商品曝光',s.visits,null)}
     ${stage('进入商品详情页',s.clicks,s.visits)}
@@ -236,7 +242,7 @@ function funnel(s) {
     ${stage('完成支付',s.paid,s.placed)}
   </ol>`;
   return `<div class="cards">${card('曝光到详情页转化率',pct(ratio(s.clicks,s.visits)),'每 100 次商品曝光访问，有多少次进入详情页')}${card('详情页到购买选择转化率',pct(ratio(s.carts,s.clicks)),'每 100 次详情页访问，有多少次加购或点击立即购买')}${card('提交订单后支付率',pct(ratio(s.paid,s.placed)),'每 100 笔提交订单，有多少笔完成支付')}</div>`+
-    panel('从商品曝光到完成支付',graphic+
+    panel('从商品曝光到完成支付',`<p class="funnel-key"><strong>漏斗双口径说明</strong><span class="rate-step">上一层转化率：对比上游紧邻节点的转化比例</span><span class="rate-total">占初始曝光：对比漏斗起点（商品曝光）的全局占比</span></p>`+graphic+
     table(['路径','购买选择 PV','路径占比','提交订单（笔）','选择后下单率','支付订单（笔）','下单后支付率'],routes.map(([label,n,p,q])=>[label,fmt(n),pct(ratio(n,s.carts)),fmt(p),pct(ratio(p,n)),fmt(q),pct(ratio(q,p))]))+
     '<p class="growth-note">漏斗 PV 按访问内的阶段事件计数，同一次访问在每一步最多计一次，同一人多次访问可以重复计。两条路径互斥，购买选择在模拟样本中按约 7:3 分配。订单表以笔计，模拟中每次下单访问对应一笔订单。</p>')+
     panel('入口表现',table(['访问入口','曝光访问 PV','支付订单（笔）','成单率','GMV'],meta.scenes.map((name,i)=>{
@@ -378,7 +384,7 @@ function buyerGoods(s) {
   const repeatBuyers=[...byBuyer.values()].filter(b=>b.count>=2);
   return tabs+`<div class="cards">${card('支付买家 UV',fmt(s.buyers))}${card('首购买家占比',pct(ratio(first,s.buyers)),fmt(first)+' 名样本内首购买家')}${card('窗口内多次支付买家',fmt(repeatBuyers.length))}</div>`+
     merchandise(s)+panel('销售额 × 毛利率四象限',productQuadrants(s.orders))+
-    panel('购买该品类的用户分层',`<label>选品类 <select id="segment-category"><option value="">全部</option>${meta.categories.map((name,i)=>`<option value="${i}"${String(i)===state.segmentCategory?' selected':''}>${name}</option>`).join('')}</select></label>`+
+    panel('购买该品类的用户分层',`<label class="segment-picker"><span>选择商品品类</span><select id="segment-category" class="inputbox"><option value="">全部</option>${meta.categories.map((name,i)=>`<option value="${i}"${String(i)===state.segmentCategory?' selected':''}>${name}</option>`).join('')}</select></label>`+
       lifecycle(state.segmentCategory? s.orders.filter(o=>o[4]===Number(state.segmentCategory)):s.orders,s.orders))+panel('商品 ABC · 哪些商品贡献了成交额？',table(['贡献分组','成交商品规格数','成交额','成交额占比'],Object.entries(groups).map(([k,[n,v]])=>[abcNames[k],fmt(n),money(v),pct(ratio(v,s.gmv))])))+
     methodHub(['rfm','kmeans','abc'],'以下分层和聚类是独立方法样本。');
 }
@@ -390,17 +396,7 @@ function attribution(pair,dims=dimensions()) {
     '<p class="growth-note">按访问量、成单率、客单价依次替换。结果用于经营分解，因果判断需独立验证。</p>';
 }
 function comparisons() {
-  return experimentPanel()+panel('按车型适配优化推荐排序',`<p>策略假设：优先展示与用户车型匹配的商品，减少浏览后的流失。对照组沿用原排序，实验组代表拟验证的新排序。按用户 1:1 分流。</p>
-    <div class="method-evidence">${VERIFIED_OFFLINE_RESULTS.ab}</div>`+
-    table(['退款护栏','对照组','实验组','判断'],[['支付用户退款','1 / 55（1.82%）','4 / 148（2.70%）','+0.88 个百分点，低于演示容忍线 +1.50 个百分点']])+
-    '<p class="growth-note">独立 Python 样本使用预设概率模拟结果。退款事件仅 5 个，真实试验需复核随机分流、样本量与售后观察窗。</p>')+
-    panel('从实验读数到发布判断',table(['核查项','当前发现','下一步'],[
-      ['样本分流','每组 8,000 名用户','核对分流稳定性与重复入组'],
-      ['转化收益','支付率提高约 1.16 个百分点','按车型和流量入口检查收益是否集中'],
-      ['退款风险','仅 5 笔退款，证据有限','等待相同售后观察窗，按预设容忍线复查'],
-      ['发布建议','先扩大验证样本','通过门槛后逐步放量，保留回退方案']
-    ]))+
-    '<button class="btn" data-experiment-action>将实验结论加入行动台账</button>'+methodHub(['ab'],'可核验分流、检验与护栏的脚本实现。');
+  return experimentPanel()+methodHub(['ab'],'可核验分流、检验与护栏的脚本实现。');
 }
 function afterSales(s) {
   const rows=meta.categories.map((name,i)=>{
@@ -443,7 +439,7 @@ function anomalies(s) {
     const delta=a.refundRate==null||b.refundRate==null?null:b.refundRate-a.refundRate;
     const volume=delta==null?null:(b.paid-a.paid)*a.refundRate;
     const risk=delta==null?null:b.paid*delta;
-    return {m,b,delta,volume,risk};
+    return {m,a,b,delta,volume,risk};
   });
   const signed=n=>n==null?'—':(n>0?'+':'')+n.toFixed(1);
   const rows=changes.map(({m,b,delta,volume,risk})=>[
@@ -468,15 +464,18 @@ function anomalies(s) {
       ]))+'<p class="growth-note">此表按退款笔数排序。判断是否需要处理某个品类时，同时核对订单量与退款率。</p>');
   }
   const drops=monthly.slice(1).map((b,i)=>({a:monthly[i],b,m:months[i+1],delta:ratio(b.gmv-monthly[i].gmv,monthly[i].gmv)})).filter(x=>x.delta<-.1).sort((a,b)=>a.delta-b.delta);
-  const diagnostic=drops.length?panel('成交额下跌怎么拆？',`<p>${drops[0].m} 环比 ${biDelta(drops[0].delta,pct(drops[0].delta))}。核查线为下跌超过 10%。</p>`+waterfall(drops[0].a,drops[0].b)):'';
-  return diagnostic+panel('优先核查哪些月份？',highlights+'<p class="growth-note">按退款率变化对应的退款笔数排序。先以旧退款率计算订单量变化的影响，再以本月订单量计算退款率变化的影响。两项合计等于实际退款笔数变化。</p>')+byCategory+panel('先判断是订单放量还是售后比例变差','<p>从月表选择一个信号，结合支付订单量、入口和品类筛选核查。退款比例升高时，优先看未发货取消和退货退款各自的贡献。</p>')+
+  const diagnostic=drops.length?panel('成交额下跌怎么拆？',drops.map(({m,a,b,delta},i)=>
+    `<details class="matrix-detail"${i===0?' open':''}><summary>${m} · GMV 环比 ${biDelta(delta,pct(delta))} · ${m.endsWith('-07')||m.endsWith('-12')?'周期性波动待复核':'风险告警待排查'}</summary>
+    <p>现状：成交额从 ${money(a.gmv)} 变为 ${money(b.gmv)}。环比下跌超过 10% 进入核查。若转化拖累，优先排查库存、运费、商品评价与支付通道。</p>${waterfall(a,b)}${anomalySlices(a,b,'gmv')}</details>`).join('')):'';
+  const refundDrill=changes.filter(x=>x.delta>=.015).map(({m,a,b})=>
+    `<details class="matrix-detail"><summary>${m} · 退款风险溯源</summary>${anomalySlices(a,b,'refund')}<button class="linkbtn" data-signal="${m}">带证据记录行动 →</button></details>`).join('');
+  return diagnostic+panel('优先核查哪些月份？',highlights+'<p class="growth-note">按退款率变化对应的退款笔数排序。先以旧退款率计算订单量变化的影响，再以本月订单量计算退款率变化的影响。两项合计等于实际退款笔数变化。</p>')+byCategory+(refundDrill?panel('退款风险 · 分渠道、品类与买家类型',refundDrill):'')+panel('先判断是订单放量还是售后比例变差','<p>从月表选择一个信号，结合支付订单量、入口和品类筛选核查。退款比例升高时，优先看未发货取消和退货退款各自的贡献。</p>')+
     panel('每月退款变化',table(['月份','核查标签','支付订单','退款订单','退款率','较上月','订单量影响（笔）','退款率影响（笔）','下一步'],rows)+
     '<p class="growth-note">退款率环比上升至少 1.50 个百分点列为风险告警；活动后月份标为节后波动待复核。完整月用于环比，异常标签是排查线索。</p>')+afterSales(s)+refundCalendar()+shippingCohort();
 }
 function touchAttribution(pair) {
-  const [,car,cat]=dimensions();
   const periods=pair.map(period=>{
-    const rows=meta.scenes.map((name,i)=>select(period.months,[i,car,cat]));
+    const rows=meta.scenes.map((_,i)=>select(period.months,[i,null,null]));
     const last=rows.map(r=>r.gmv);
     const shared=last.map(()=>0);
     for(const row of rows) for(const order of row.orders) {
@@ -491,7 +490,7 @@ function touchAttribution(pair) {
     const share=ratio(p.last[i],p.total);
     return `<div class="bar-row"><span>${j?'后期':'前期'} ${pct(share)}</span><div class="metric-track" aria-hidden="true"><i style="width:${(share||0)*100}%;background:${j?teal:blue}"></i></div></div>`;
   }).join('')}</div>`).join('')}</div>`;
-  return panel('推荐、搜索和其他入口各贡献了多少？',`<p>蓝色为前期，绿色为后期。横条比较按最后访问入口归属的成交额占比。</p><p class="growth-note">${pair.map(p=>p.months[0]+' 至 '+p.months.at(-1)).join(' 对比 ')}。保留车型和品类筛选，覆盖全部入口以便横向比较。</p>`+graphic+
+  return panel('推荐、搜索和其他入口各贡献了多少？',`<p>蓝色为前期，绿色为后期。横条比较按最后访问入口归属的成交额占比。</p><p class="growth-note">${pair.map(p=>p.months[0]+' 至 '+p.months.at(-1)).join(' 对比 ')}。固定使用全车型、全品类和全入口，按本页周期切换。</p>`+graphic+
     table(['访问入口','商品展示次数 前期 → 后期','详情页 PV 前期 → 后期','成交额 前期 → 后期','按路径平均分配 前期 → 后期'],meta.scenes.map((name,i)=>[
       name,...['exposures','clicks'].map(key=>periods.map(p=>fmt(p.rows[i][key])).join(' → ')),
       periods.map(p=>money(p.last[i])).join(' → '),periods.map(p=>money(p.shared[i])).join(' → ')
@@ -499,15 +498,14 @@ function touchAttribution(pair) {
     '<p class="growth-note">最后入口法把成交额全部计入最终入口。路径平均法按订单路径中的触点出现次数平分，两种方法各自加总均等于当期成交额。此图为模拟归因，历史成果中的 18% → 35% 指完整经营年推荐成交额月占比均值。</p>');
 }
 function casePage() {
-  const [,car,cat]=dimensions();
-  const dims=[null,car,cat];
+  const dims=[null,null,null];
   const pair=seasonPair(true);
   const rows=pair.map(s=>{
     const m=select(s.months,dims);
-    const r=dims[0]!=null&&dims[0]!==0?stats([],[]):select(s.months,[0,dims[1],dims[2]]);
+    const r=select(s.months,[0,null,null]);
     const monthShares=s.months.map(x=>{
       const total=select([x],dims).gmv;
-      return ratio(dims[0]!=null&&dims[0]!==0?0:select([x],[0,dims[1],dims[2]]).gmv,total);
+      return ratio(select([x],[0,null,null]).gmv,total);
     }).filter(x=>x!=null);
     return [s.months[0]+' 至 '+s.months.at(-1),money(m.gmv),money(r.gmv),money(m.gmv-r.gmv),pct(r.conversion),pct(ratio(sum(monthShares,x=>x),monthShares.length)),pct(ratio(r.gmv,m.gmv))];
   });
@@ -515,11 +513,14 @@ function casePage() {
     '<p class="growth-note">按模拟订单入口归集。比较前先查流量占比，再看推荐流成单率和商品贡献。对照实验另行验证策略效果。</p>')+
     touchAttribution(pair)+methodHub(['attr'],'以下为独立归因样本。');
 }
-const recordFields=['evidence','action','kpi','owner','due'];
-const recordDraft={};
+const recordFields=['evidence','action','kpi','benefit','owner','due'];
+const defaultRecordDraft={};
+const experimentRecordDraft={};
+const isExperimentRecord=()=>state.signal?.source==='04 · 策略实验';
+const currentRecordDraft=()=>isExperimentRecord()?experimentRecordDraft:defaultRecordDraft;
 function decision() {
   const signal=state.signal?.evidence||'从经营异常诊断选择一个月，或记录主动分析。';
-  return actionLedger()+panel('从经营证据到复查计划',`<div class="bi-decision"><p>${signal}</p><p class="growth-note">当前筛选 ${$('start').value} 至 ${$('end').value}。先写待验证判断，再指定动作与复查标准。复查时可沿用同入口、同车型和同品类口径。</p><label>补充证据与待验证判断<textarea id="record-evidence" class="inputbox" rows="3"></textarea></label><label>后续动作<textarea id="record-action" class="inputbox" rows="3"></textarea></label><label>复查指标与标准<input id="record-kpi" class="inputbox" placeholder="例如退款率回到同品类基准以内"></label><div class="record-responsibility"><label>负责人<input id="record-owner" class="inputbox" placeholder="团队或角色"></label><label>复查日期<input id="record-due" class="inputbox" type="date"></label></div><label><input type="checkbox" id="record-mark"> 在经营趋势图标记这条行动</label><button class="btn" id="save-action">加入行动台账</button> <button class="btn" id="copy-decision">生成决策记录</button> <button class="btn" id="copy-output" hidden>复制记录</button><p id="record-error" role="status"></p><pre id="record-output" style="white-space:pre-wrap" aria-live="polite"></pre></div>`);
+  return actionLedger()+panel('从经营证据到复查计划',`<div class="bi-decision"><p>${signal}</p><p class="growth-note">证据归属：${state.signal?.period||state.signal?.source||'主动分析'}。请填写落地动作、验收指标和预期收益。</p><label>补充证据与待验证判断<textarea id="record-evidence" class="inputbox" rows="3"></textarea></label><label>后续动作<textarea id="record-action" class="inputbox" rows="3"></textarea></label><label>复查指标与标准<input id="record-kpi" class="inputbox" placeholder="例如退款率回到同品类基准以内"></label><label>预期收益<input id="record-benefit" class="inputbox" placeholder="例如减少约 20 笔退款，待复查验证"></label><div class="record-responsibility"><label>负责人<input id="record-owner" class="inputbox" placeholder="团队或角色"></label><label>复查日期<input id="record-due" class="inputbox" type="date"></label></div>${isExperimentRecord()?'<p class="growth-note">离线实验无实际投放日期，计划归入实验台账。</p>':'<label><input type="checkbox" id="record-mark"> 在经营趋势图标记这条行动</label>'}<button class="btn" id="save-action">加入行动台账</button> <button class="btn" id="copy-decision">生成决策记录</button> <button class="btn" id="copy-output" hidden>复制记录</button><p id="record-error" role="status"></p><pre id="record-output" style="white-space:pre-wrap" aria-live="polite"></pre></div>`);
 }
 function update() {
   closeMetricHelp();
@@ -528,10 +529,12 @@ function update() {
   $('nav').innerHTML=tabs.map((i,j)=>`<button data-tab="${i}" class="${i===state.tab?'active':''}" ${i===state.tab?'aria-current="page"':''}>${i<0?'⌂':String(i+1).padStart(2,'0')} · ${names[j]}</button>`).join('');
   $('title').textContent=names[state.tab+1];
   $('subtitle').textContent='24 个月模拟经营案例 · 2022.10–2024.09';
-  $('start').closest('.filters').hidden=state.tab<0;
-  const s=selectScope();
-  $('filter-info').textContent=`曝光访问 PV ${fmt(s.visits)} · 支付订单 ${fmt(s.paid)} 笔${state.campaign?' · '+selectedPeriod().join(' 至 ')+'（未支付 PV 按月拆估）':''}`;
+  const scoped=[0,1,2,4].includes(state.tab);
+  $('start').closest('.filters').hidden=!scoped;
+  const s=scoped?selectScope():null;
+  $('filter-info').textContent=scoped&&state.campaign?selectedPeriod().join(' 至 ')+'（未支付 PV 按月拆估）':'';
   $('content').innerHTML=state.tab<0?home():[overview,funnel,buyerGoods,comparisons,anomalies,casePage,decision][state.tab](s);
+  const recordDraft=currentRecordDraft();
   if(state.tab===6) for(const key of recordFields) {
     const field=$('record-'+key);
     field.value=recordDraft[key]||'';
@@ -551,8 +554,30 @@ function activate(target) {
     }
   }
   else if(d.goodsTab) {state.goodsTab=d.goodsTab;state.point=0;}
+  else if(d.actionSource!==undefined) {
+    const record=actions[Number(d.actionSource)];
+    if(!record)return;
+    state.tab={'04':3,'05':4,'06':5}[record.source.slice(0,2)]??6;
+    if(state.tab===4&&record.scope&&data.has(record.month)) {
+      const months=[...data.keys()];
+      $('start').value=months[Math.max(0,months.indexOf(record.month)-1)];
+      $('end').value=record.month;
+      ['scene','car','cat'].forEach((id,i)=>{$(id).value=record.scope[i];});
+      state.campaign=null;
+      $('end').dispatchEvent(new Event('change'));
+      return;
+    }
+  }
+  else if(d.caseAction!==undefined) {
+    state.signal={source:'06 · 推荐复盘',evidence:'车型适配推荐：转化上升后，继续核验退款、净毛利与投入产出。'};
+    state.tab=6;
+  }
   else if(d.experimentAction!==undefined) {
-    state.signal={source:'04 · 策略实验',evidence:'推荐实验转化提升，退款护栏与净毛利仍需扩大样本验证。'};
+    const {draft,...signal}=experimentHandoff();
+    state.signal=signal;
+    for(const [key,value] of Object.entries(draft)) {
+      if(!(key in experimentRecordDraft))experimentRecordDraft[key]=value;
+    }
     state.tab=6;
   }
   else if(d.season) {state.season=d.season;state.point=0;}
@@ -567,7 +592,7 @@ function activate(target) {
     const scope=[meta.scenes[scene],meta.cars[car],meta.categories[cat]].map(x=>x||'全部').join(' / ');
     const volume=change==null?null:(m.paid-prior.paid)*prior.refundRate;
     const risk=change==null?null:m.paid*change;
-    state.signal={source:'05 · 经营诊断',period:d.signal,evidence:`${d.signal} 退款率 ${pct(m.refundRate)}（${fmt(m.refunds)} / ${fmt(m.paid)}），较上月 ${pp(change)}。${risk==null?'':`订单量变化约 ${volume.toFixed(1)} 笔，退款率变化约 ${risk.toFixed(1)} 笔。`}入口 / 车型 / 品类：${scope}。`};
+    state.signal={source:'05 · 经营诊断',period:d.signal,scope:[$('scene').value,$('car').value,$('cat').value],evidence:`${d.signal} 退款率 ${pct(m.refundRate)}（${fmt(m.refunds)} / ${fmt(m.paid)}），较上月 ${pp(change)}。${risk==null?'':`订单量变化约 ${volume.toFixed(1)} 笔，退款率变化约 ${risk.toFixed(1)} 笔。`}入口 / 车型 / 品类：${scope}。`};
     state.tab=6;
   }
   else if(target.id==='open-method-drawer') {
@@ -577,6 +602,7 @@ function activate(target) {
     return;
   }
   else if(target.id==='copy-decision'||target.id==='save-action') {
+    const recordDraft=currentRecordDraft();
     if(!recordDraft.action?.trim()||!recordDraft.kpi?.trim()) {
       $('record-error').textContent='请填写后续动作与复查标准。';
       $('record-output').textContent='';
@@ -586,16 +612,16 @@ function activate(target) {
     $('record-error').textContent='';
     if(target.id==='save-action') {
       actions.unshift({action:recordDraft.action,kpi:recordDraft.kpi,owner:recordDraft.owner||'待分配',due:recordDraft.due||'待定',
-        source:state.signal?.source||'主动分析',evidence:state.signal?.evidence||recordDraft.evidence||'',month:state.signal?.period||$('end').value,
-        mark:$('record-mark').checked,status:actionStates[0]});
+        source:state.signal?.source||'主动分析',evidence:[state.signal?.evidence,recordDraft.evidence].filter(Boolean).join(' · '),benefit:recordDraft.benefit,scope:state.signal?.scope,month:isExperimentRecord()?null:state.signal?.period||$('end').value,
+        mark:Boolean($('record-mark')?.checked),status:actionStates[0]});
       saveActions();
       update();
       return;
     }
     $('record-output').textContent=['经营决策记录 · 模拟案例',
-      `证据期间 ${state.signal?.period||$('start').value+' 至 '+$('end').value}`,
+      `证据期间 ${isExperimentRecord()?'独立离线模拟样本':state.signal?.period||$('start').value+' 至 '+$('end').value}`,
       `观察 ${state.signal?.evidence||'主动分析'} ${recordDraft.evidence||''}`,
-      `动作 ${recordDraft.action}`,`复查标准 ${recordDraft.kpi}`,
+      `动作 ${recordDraft.action}`,`复查标准 ${recordDraft.kpi}`,`预期收益 ${recordDraft.benefit||'待量化'}`,
       `负责人 ${recordDraft.owner||'待分配'} · 复查日期 ${recordDraft.due||'待定'}`].join('\n');
     $('copy-output').hidden=false;
     return;
@@ -607,6 +633,7 @@ function activate(target) {
     return;
   } else return;
   update();
+  if(d.experimentAction!==undefined) $('record-action').focus();
   if(target.matches('button')&&(d.point!==undefined||d.metric||d.season)) {
     const key=d.point!==undefined?'point':d.metric?'metric':'season';
     document.querySelector(`button[data-${key}="${d[key]}"]`)?.focus({preventScroll:true});
@@ -654,9 +681,15 @@ async function init() {
   document.addEventListener('change',event=>{
     const target=event.target;
     if(target.id==='segment-category') {state.segmentCategory=target.value;update();$('segment-category').focus();}
+    if(target.dataset.ledgerFilter) {
+      ledgerFilters[target.dataset.ledgerFilter]=target.value;
+      update();
+      document.querySelector(`[data-ledger-filter="${target.dataset.ledgerFilter}"]`).focus();
+    }
     if(target.dataset.actionStatus!==undefined) {
       actions[Number(target.dataset.actionStatus)].status=target.value;
       saveActions();
+      if(ledgerFilters.status)update();
     }
   });
   document.addEventListener('pointerover',event=>{
