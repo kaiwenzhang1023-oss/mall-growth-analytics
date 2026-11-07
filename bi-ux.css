@@ -182,9 +182,13 @@ main > .notice { margin-bottom:14px; }
 .experiment-caution { color:#805118; }
 
 /* 能力入口使用真实链接，明确键盘焦点和跳转反馈。 */
-.skill-links { display:flex; flex-wrap:wrap; gap:8px; padding:0; margin:0; list-style:none; }
+/* 技能区独占一行，窄屏可横向滑动，保留链接完整文案。 */
+.project-skills,.project-pipeline { grid-column:1/-1; min-width:0; }
+.skill-links { display:flex; gap:6px; padding:3px; margin:-3px; overflow-x:auto; list-style:none; }
+.skill-links li { flex:none; white-space:nowrap; }
 .skill-links a,.result-link { display:inline-flex; align-items:center; gap:8px; padding:6px 9px; border:1px solid #d7e2ec; border-radius:6px; color:#244769; text-decoration:none; background:#f5f9fd; transition:transform .16s ease,background .16s ease,border-color .16s ease; }
-.skill-links a span { align-self:flex-start; font-size:12px; line-height:1; }
+.skill-links a { gap:5px; padding:4px 7px; font-size:13px; line-height:1.45; }
+.skill-links a span { align-self:flex-start; font-size:10px; line-height:1; }
 .skill-links a:hover,.result-link:hover { transform:translateY(-1px); border-color:#829ebc; background:#eaf2fb; }
 .skill-links a:focus-visible,.result-link:focus-visible,.module-card:focus-visible,.method-item summary:focus-visible { outline:2px solid #315d8a; outline-offset:2px; }
 .module-card { display:block; box-sizing:border-box; text-decoration:none; transition:box-shadow .16s ease,border-color .16s ease; }
@@ -202,11 +206,14 @@ main > .notice { margin-bottom:14px; }
 .data-flow li+li::after { content:""; position:absolute; inset-inline-start:-6px; top:calc(50% - 2px); width:4px; height:4px; border-top:1px solid #8ba6bf; border-right:1px solid #8ba6bf; transform:rotate(45deg); }
 
 /* 战报以前后列和独立变化徽章对照，保持数字右对齐。 */
-.result-table { font-variant-numeric:tabular-nums; min-width:470px; }
+.result-table { font-variant-numeric:tabular-nums; min-width:470px; width:100%; }
 .result-table th,.result-table td { text-align:right; }
 .result-table th:first-child { text-align:left; }
 .result-before { color:#596d81; }
+.result-table .result-group th { background:#f4f8fc; color:#244769; }
 .result-delta { display:inline-block; padding:3px 7px; border-radius:999px; background:#e8f5ed; color:#17613a; font-size:12px; white-space:nowrap; }
+
+.result-delta[data-favorable="false"] { background:#faeeed; color:#9b332d; }
 
 /* 原生 details 保留语义，Chevron 旋转并在展开时轻微过渡。 */
 .method-item summary { display:flex; align-items:center; gap:9px; list-style:none; }

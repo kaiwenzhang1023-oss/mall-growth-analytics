@@ -165,18 +165,29 @@ function moduleFromHash() {
   return match?Number(match[1])-1:-1;
 }
 function historicalResults() {
-  const measures=[
-    ['旺季月均成交额',94.7,232.4,n=>n.toFixed(1)+' 万元','relative'],
-    ['推荐场景 GMV 月占比均值',.18,.35,n=>Math.round(n*100)+'%','points'],
-    ['推荐流成单率',.008,.019,n=>(n*100).toFixed(1)+'%','points']
+  // 作者确认的脱敏历史展示值，与演示订单和筛选状态独立。
+  const groups=[
+    ['完整经营年',[[71.65,161.74],[1.87,2.33],[9.98,9.52],[20.70,25.86]]],
+    ['旺季',[[94.70,232.40],[2.03,2.57],[9.84,9.42],[22.25,28.29]]],
+    ['淡季',[[48.60,91.08],[1.60,1.90],[10.28,9.77],[18.71,21.99]]]
   ];
-  const rows=measures.map(([label,before,after,format,kind])=>{
+  const labels=['月均成交额','成单率','支付订单退款率','首购后 90 日复购率'];
+  const measures=groups.map(([name,values])=>[name,values.map(([before,after],i)=>[
+    labels[i],before,after,i===0?'amount':'rate',i===2
+  ])]);
+  measures.push(['推荐贡献（完整经营年）',[
+    ['推荐场景 GMV 月占比均值',18,35,'share',false],
+    ['推荐流成单率',0.8,1.9,'recommendation',false]
+  ]]);
+  const rows=measures.map(([group,values])=>`<tbody><tr class="result-group"><th colspan="4" scope="rowgroup">${group}</th></tr>${values.map(([label,before,after,kind,lowerIsBetter])=>{
     const change=after-before;
-    const formatted=kind==='relative'?pct(ratio(change,before)):pp(change);
-    return `<tr><th scope="row">${label}</th><td class="result-before">${format(before)}</td><td><strong>${format(after)}</strong></td><td><span class="result-delta">${change>=0?'▲':'▼'} ${change>0&&!formatted.startsWith('+')?'+':''}${formatted}</span></td></tr>`;
-  });
-  return panel('历史项目成果',`<p class="growth-note">旺季指标对比 2023 与 2024 年 4–9 月。推荐贡献对比完整经营年，2022.10–2023.09 与 2023.10–2024.09。</p>
-    <div class="growth-tables"><table class="tbl result-table"><thead><tr><th scope="col">经营指标</th><th scope="col">优化前</th><th scope="col">优化后</th><th scope="col">变化</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>
+    const formatted=kind==='amount'?pct(ratio(change,before)):pp(change/100);
+    const format=n=>kind==='amount'?n.toFixed(2)+' 万元':n.toFixed(kind==='share'?0:kind==='recommendation'?1:2)+'%';
+    const favorable=lowerIsBetter?change<0:change>0;
+    return `<tr><th scope="row">${label}</th><td class="result-before">${format(before)}</td><td><strong>${format(after)}</strong></td><td><span class="result-delta" data-favorable="${favorable}">${change>=0?'▲':'▼'} ${change>0&&!formatted.startsWith('+')?'+':''}${formatted}</span></td></tr>`;
+  }).join('')}</tbody>`).join('');
+  return panel('历史项目成果',`<p class="growth-note">完整经营年对比 2022.10–2023.09 与 2023.10–2024.09。旺季为 4–9 月，淡季为 10 月至次年 3 月。</p>
+    <div class="growth-tables"><table class="tbl result-table"><thead><tr><th scope="col">经营指标</th><th scope="col">优化前</th><th scope="col">优化后</th><th scope="col">变化</th></tr></thead>${rows}</table></div>
     <p class="growth-note">注：本模块指标基于作者历史真实操盘业务同比例脱敏核算，独立展示个人业务成果，不与下方演示看板的模拟数据集混算。</p>
     <div class="growth-switch"><a class="result-link" href="#module-03" data-tab="2">查看模拟复购分段 →</a><a class="result-link" href="#module-06" data-tab="5" data-case-year>查看模拟触点对比 →</a></div>`);
 }
@@ -199,8 +210,8 @@ function home() {
   ${panel('项目概述与交付范围',`<div class="project-overview">
     <section><h3>业务背景</h3><p>面向摩托装备商城，为运营、类目操盘手、分析师提供一站式经营决策看板，定位流失、验证增长策略，支撑大促复盘与异常处置。</p></section>
     <section><h3>我的职责</h3><p>独立完成数据集仿真、指标体系设计、互斥转化漏斗建模、实验方案设计与复盘闭环，把经营问题量化，输出可落地、可验收的经营动作。</p></section>
-    <section><h3>业务建模能力</h3><ul class="skill-links">${[['指标体系构建',0],['互斥漏斗建模',1],['A/B 统计检验',3],['RFM 用户分群',2],['异常归因',4]].map(([label,i])=>`<li><a href="${moduleHash(i)}" data-tab="${i}">${label}<span aria-hidden="true">↗</span></a></li>`).join('')}</ul></section>
-    <section><h3>数据加工链路</h3><ol class="data-flow">${['原始日志','Pandas 清洗聚合','业务指标层','决策看板'].map((name,i)=>`<li><span class="pipeline-index" aria-hidden="true">0${i+1}</span><span>${name}</span></li>`).join('')}</ol></section>
+    <section class="project-skills"><h3>业务建模能力</h3><ul class="skill-links">${[['指标体系构建',0],['互斥漏斗建模',1],['A/B 统计检验',3],['RFM 用户分群',2],['异常归因',4]].map(([label,i])=>`<li><a href="${moduleHash(i)}" data-tab="${i}">${label}<span aria-hidden="true">↗</span></a></li>`).join('')}</ul></section>
+    <section class="project-pipeline"><h3>数据加工链路</h3><ol class="data-flow">${['原始日志','Pandas 清洗聚合','业务指标层','决策看板'].map((name,i)=>`<li><span class="pipeline-index" aria-hidden="true">0${i+1}</span><span>${name}</span></li>`).join('')}</ol></section>
     </div>`)}
   ${historicalResults()}
   ${panel('从看经营到做决策',`<div class="portfolio-stages">${[['看经营',0,3],['验证与诊断',3,5],['复盘与行动',5,7]].map(([label,start,end])=>`<section><h3>${label}</h3><ul>${pages.slice(start,end).map((name,index)=>{
