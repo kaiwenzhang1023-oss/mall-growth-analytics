@@ -135,7 +135,7 @@ def main():
                     car,cat=R.choices(pairs,demand)[0]
                     sku=cat*30+R.choices(range(30),[31-j for j in range(30)])[0]
                     touches = [R.randrange(len(SCENES)) for _ in range(R.choices([0,1,2],[40,43,17])[0])]
-                    orders.append([user,str(dt),scene,car,cat,sku,amount,0,0,0,0,[*touches,scene]])
+                    orders.append([user,str(dt),scene,car,cat,sku,amount,0,0,0,0,[*touches,scene], int((amount+dt.day+scene)%4==0)])
                 n = nvisits-npaid
                 unpaid_order = min(n,round(npaid*R.uniform(.26,.48)))
                 cart_only = round((n-unpaid_order)*R.uniform(.037,.051))
@@ -144,7 +144,7 @@ def main():
                 for stage, count in enumerate(stages):
                     dist=allocate(count,[weight*R.randint(85,115) for weight in demand])
                     for (car,cat),q in zip(pairs,dist):
-                        if q: visit_buckets.append([scene,car,cat,stage,q,q*R.choice([3,4,5,6])])
+                        if q: visit_buckets.append([scene,car,cat,stage,q,q*R.choice([3,4,5,6]),q//4 if stage==3 else 0])
             # Weighted selection assigns higher return propensity to apparel.
             by_propensity = sorted(range(len(orders)),
                 key=lambda j:R.random()**(1/(3.2 if orders[j][4] in APPAREL else 1.0)),reverse=True)
@@ -163,9 +163,9 @@ def main():
             assert sum(o[6] for o in orders if o[2]==0)==rgmv
             months_data[key] = {'month':key,'orders':orders,'unpaid':visit_buckets}
     metadata = {'seasons':checks,'history':history,'cohorts':eligible,'assortment':FIT,'categories':CATS,'cars':CARS,'scenes':SCENES,
-                         'order_fields':['user','paid_date','scene','car','category','sku','amount_cents','refund_type','shipped_date','refund_completed_date','returned_date','touch_path'],
+                         'order_fields':['user','paid_date','scene','car','category','sku','amount_cents','refund_type','shipped_date','refund_completed_date','returned_date','touch_path','buy_now'],
                          'refund_types':['none','pre_shipment_only','shipped_only','return_and_refund'],
-                         'unpaid_fields':['scene','car','category','funnel_stage','visits','exposures'],
+                         'unpaid_fields':['scene','car','category','funnel_stage','visits','exposures','buy_now_visits'],
                          'source':'Synthetic case with historical headline calibration. Unpaid visits aggregated by stratum.'}
     payload = {'metadata':metadata,'months':months_data}
     (ROOT/'mall-data.json').write_text(json.dumps(payload,ensure_ascii=False,separators=(',',':'))+'\n',encoding='utf-8')
