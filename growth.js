@@ -16,7 +16,12 @@ const pct = n => n == null ? '—' : (100*n).toFixed(2)+'%';
 const pp = n => n == null ? '—' : (n>0?'+':'')+(100*n).toFixed(2)+' 个百分点';
 const sum = (rows, fn) => rows.reduce((total,row)=>total+fn(row),0);
 const day = value => Date.parse(value)/86400000;
-const card = (label,value,detail='') => `<div class="card"><div class="k">${label}</div><div class="v">${value}</div><p class="growth-note">${detail}</p></div>`;
+const card = (label,value,detail='') => {
+  const help=metricDefinitions.has(label)?`<button type="button" class="bi-help" data-bi-metric="${label}" aria-label="查看${label}口径" aria-expanded="false">ⓘ</button>`:'';
+  const unit=['支付订单','退款成功订单'].includes(label)?'单':['支付买家','支付买家数','窗口内多次支付买家'].includes(label)?'人':'';
+  return `<div class="card"><div class="k">${label}${help}</div><div class="v">${biKpi(value,unit)}</div>${detail?`<p class="growth-note">${detail}</p>`:''}</div>`;
+};
+let closeMetricHelp=()=>{};
 const panel = (title,content) => `<section class="panel"><h2>${title}</h2>${content}</section>`;
 function table(columns,rows) {
   return `<div class="growth-tables"><table class="tbl"><thead><tr>${columns.map(x=>`<th scope="col">${x}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr>${row.map(x=>`<td>${x}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
@@ -94,7 +99,8 @@ function seasonChart() {
   const formatter=state.metric==='gmv'?v=>(v/1e6).toFixed(1)+' 万':pct;
   const i=Math.min(state.point,5);
   const [a,b]=pair.map(s=>select([s.months[i]]));
-  const diff=state.metric==='gmv'?`差额 ${money(b.gmv-a.gmv)} · 同比 ${pct(ratio(b.gmv-a.gmv,a.gmv))}`:pp(a[state.metric]==null||b[state.metric]==null?null:b[state.metric]-a[state.metric]);
+  const delta=state.metric==='gmv'?ratio(b.gmv-a.gmv,a.gmv):a[state.metric]==null||b[state.metric]==null?null:b[state.metric]-a[state.metric];
+  const diff=state.metric==='gmv'?`差额 ${money(b.gmv-a.gmv)} · 同比 ${biDelta(delta,pct(delta))}`:`同比 ${biDelta(delta,pp(delta))}`;
   const detail=state.metric==='gmv'?x=>`支付订单 ${fmt(x.paid)} · 客单价 ${x.aov==null?'—':money(x.aov)}`:state.metric==='conversion'?x=>`${fmt(x.paid)} / ${fmt(x.visits)} 次访问`:x=>`${fmt(x.refunds)} / ${fmt(x.paid)} 笔支付订单`;
   return panel('同季同比 · '+metricNames[state.metric],switches()+`<div class="growth-switch">${options.map(key=>`<button class="btn" data-metric="${key}" aria-pressed="${state.metric===key}">${metricNames[key]}</button>`).join('')}</div>`+
     plot(labels,series,formatter,true)+`<div class="growth-caption" role="status">${pair[0].months[i]} ${formatter(a[state.metric])}（${detail(a)}）<br>${pair[1].months[i]} ${formatter(b[state.metric])}（${detail(b)}）<br>${diff}</div><p class="growth-note">同季图固定比较两个完整季节，响应入口、车型和品类筛选。</p>`);
@@ -134,7 +140,7 @@ function repurchase() {
   const [a,b]=series.map(s=>s.values[i]);
   const rows=spans.map((n,j)=>[n+' 日',...cohorts.map(c=>`${pct(ratio(c.counts[j],c.n))}（${fmt(c.counts[j])} / ${fmt(c.n)}）`)]);
   return panel('累计复购 · 同季首购队列',switches()+plot(spans.map(n=>n+' 日'),series,pct,true)+
-    `<div class="growth-caption" role="status">${spans[i]} 日 · ${rows[i][1]} → ${rows[i][2]} · ${pp(a==null||b==null?null:b-a)}</div>`+
+    `<div class="growth-caption" role="status">${spans[i]} 日 · ${rows[i][1]} → ${rows[i][2]} · ${biDelta(a==null||b==null?null:b-a,pp(a==null||b==null?null:b-a))}</div>`+
     table(['首购后','前期','后期'],rows)+
     '<p class="growth-note">淡季取 10–12 月，旺季取 4–6 月。四档均使用满 90 天的同一批用户。维度筛选作用于首购，后续购买按全商城追踪。</p>');
 }
@@ -177,7 +183,7 @@ function rolling() {
     const priorRate=baseline?ratio(baseline.rep,baseline.n):null;
     return [month,fmt(current.n),fmt(current.rep),pct(rate),
       baseline?`${pct(priorRate)}（${fmt(baseline.rep)} / ${fmt(baseline.n)}）`:'—',
-      mature&&rate!=null&&priorRate!=null?pp(rate-priorRate):'—',
+      mature&&rate!=null&&priorRate!=null?biDelta(rate-priorRate,pp(rate-priorRate)):'—',
       status.startsWith('预警')?`<strong class="warn">${status}</strong>`:status];
   });
   return panel('30 日复购 · 高频监控',
@@ -269,7 +275,7 @@ function anomalies(s) {
     const [a,b]=[months[i],m].map(x=>select([x]));
     const delta=a.refundRate==null||b.refundRate==null?null:b.refundRate-a.refundRate;
     const signal=delta==null?'样本不足':delta>0?'退款比例上升':b.refunds>a.refunds?'退款比例下降，退款量上升':'退款量与比例未同步上升';
-    return [m,fmt(b.refunds),pct(b.refundRate),pp(delta),signal,`<button class="linkbtn" data-signal="${m}">记录待核查</button>`];
+    return [m,fmt(b.refunds),pct(b.refundRate),biDelta(delta,pp(delta)),signal,`<button class="linkbtn" data-signal="${m}">记录待核查</button>`];
   });
   return panel('月度售后信号',table(['月份','退款订单','退款率','较上月','观察','下一步'],rows)+
     '<p class="growth-note">月度变化供定位问题，正式预警需结合品类基准、同季走势和订单量。</p>')+afterSales(s)+shippingCohort();
@@ -307,9 +313,10 @@ function casePage(s) {
 function decision() {
   const selected=state.signal?select([state.signal]):null;
   const signal=selected?`${state.signal} 售后观察 · 退款率 ${pct(selected.refundRate)}（${fmt(selected.refunds)} / ${fmt(selected.paid)}）`:'从经营异常诊断选择一个月，或记录主动分析。';
-  return panel('经营决策记录',`<p>${signal}</p><p class="growth-note">当前筛选 ${$('start').value} 至 ${$('end').value}。记录待验证判断与下一步。</p><label>观察证据<textarea id="record-evidence" class="inputbox" rows="3"></textarea></label><label>后续动作<textarea id="record-action" class="inputbox" rows="3"></textarea></label><label>验收指标<input id="record-kpi" class="inputbox" value="整体成单率、退款率、30 日复购率"></label><button class="btn" id="copy-decision">生成决策记录</button> <button class="btn" id="copy-output" hidden>复制记录</button><pre id="record-output" style="white-space:pre-wrap" aria-live="polite"></pre>`)+methodHub(['ab'],'模拟实验验收可参考以下方法。');
+  return panel('经营决策记录',`<div class="bi-decision"><p>${signal}</p><p class="growth-note">当前筛选 ${$('start').value} 至 ${$('end').value}。记录待验证判断与下一步。</p><label>观察证据<textarea id="record-evidence" class="inputbox" rows="3"></textarea></label><label>后续动作<textarea id="record-action" class="inputbox" rows="3"></textarea></label><label>验收指标<input id="record-kpi" class="inputbox" value="整体成单率、退款率、30 日复购率"></label><button class="btn" id="copy-decision">生成决策记录</button> <button class="btn" id="copy-output" hidden>复制记录</button><pre id="record-output" style="white-space:pre-wrap" aria-live="polite"></pre></div>`)+methodHub(['ab'],'模拟实验验收可参考以下方法。');
 }
 function update() {
+  closeMetricHelp();
   const names=['项目介绍',...pages];
   const tabs=[-1,...pages.map((_,i)=>i)];
   $('nav').innerHTML=tabs.map((i,j)=>`<button data-tab="${i}" class="${i===state.tab?'active':''}" ${i===state.tab?'aria-current="page"':''}>${i<0?'⌂':String(i+1).padStart(2,'0')} · ${names[j]}</button>`).join('');
@@ -319,6 +326,8 @@ function update() {
   const s=select(currentMonths());
   $('filter-info').textContent=`${fmt(s.visits)} 次访问 · ${fmt(s.paid)} 笔支付订单`;
   $('content').innerHTML=state.tab<0?home():[overview,funnel,buyerGoods,comparisons,anomalies,casePage,decision][state.tab](s);
+  biFormatTables($('content'));
+  biObservePlots($('content'));
 }
 function activate(target) {
   const d=target.dataset;
@@ -375,13 +384,16 @@ async function init() {
   fillOptions('start',months);fillOptions('end',months);
   fillOptions('car',meta.cars,true);fillOptions('cat',meta.categories,true);fillOptions('scene',meta.scenes,true);
   $('end').value=months.at(-1);
+  const syncDates=biDateControls(months,update);
+  closeMetricHelp=biMetricHelp();
   for(const id of ['start','end','car','cat','scene']) $(id).addEventListener('change',()=>{
-    if($('start').value>$('end').value) $(id==='start'?'end':'start').value=$(id).value;
+    syncDates(id);
     update();
   });
   $('reset').onclick=()=>{
     $('start').value=months[0];$('end').value=months.at(-1);
     for(const id of ['car','cat','scene'])$(id).value='';
+    syncDates();
     update();
   };
   document.addEventListener('pointerover',event=>{
