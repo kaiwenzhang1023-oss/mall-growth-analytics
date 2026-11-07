@@ -7,16 +7,26 @@ import random
 
 ROOT = Path(__file__).parent
 R = random.Random(20261107)
-CATS = ['头盔','护具','行车记录仪','配件耗材','骑行服','骑行裤','骑行靴']
-CARS = ['仿赛','巡航','拉力','踏板']
+CATS = ['头盔','骑行服','骑行靴','手套','护具','电子设备','配件耗材']
+CARS = ['踏板','复古','巡航','仿赛','拉力','电动摩托']
+# Relative demand by category. Zero means the demo assortment has no such pairing.
+FIT = [
+    [29, 9, 0, 18, 8, 12, 24],
+    [23, 21, 12, 15, 8, 0, 21],
+    [24, 19, 16, 12, 0, 13, 16],
+    [23, 24, 16, 10, 18, 9, 0],
+    [18, 20, 17, 10, 19, 7, 9],
+    [32, 0, 0, 18, 8, 14, 28],
+]
+APPAREL = {1, 2}
 SCENES = ['首页推荐流','商城搜索','活动入口','车型专区','购物车推荐','社区挂载']
 # October pre-sale and November promotions lift the off-season.
 # June promotions and the summer rebound have different strengths by year.
 SEASONS = [
-    ('2022-10',[581,677,514,372,313,459],365000,5847,601,930,[21,75,128,174],112000,990,140),
-    ('2023-04',[752,901,1158,986,1065,820],600000,12174,1198,1200,[37,121,193,267],240000,1920,180),
-    ('2023-10',[1116,1285,1018,703,602,741],532000,10083,985,1510,[44,149,248,332],160000,2304,230),
-    ('2024-04',[1936,2229,2867,2143,2471,2298],960000,24631,2321,2400,[101,319,509,679],360000,6840,350),
+    ('2022-10',[581,677,514,372,313,459],365000,5847,601,930,[24,87,139,174],112000,990,140),
+    ('2023-04',[752,901,1158,986,1065,820],600000,12174,1198,1200,[35,142,219,267],240000,1920,180),
+    ('2023-10',[1116,1285,1018,703,602,741],532000,10083,985,1510,[37,123,236,332],160000,2304,230),
+    ('2024-04',[1936,2229,2867,2143,2471,2298],960000,24631,2321,2400,[103,381,561,679],360000,6840,350),
 ]
 
 # Relative weights within each season. Each row is visits, paid orders, refund risk,
@@ -111,8 +121,8 @@ def main():
             gmv = gmvs[i]*100000
             rgmv = gmv*share[i]//1000
             cents_by_scene = [rgmv,*allocate(gmv-rgmv,paid_by_scene[1:])]
-            category_weights = [w*(profiles[i][3] if j>=4 else 100)
-                                for j,w in enumerate([25,15,13,20,14,7,6])]
+            pairs = [(car, cat) for car, mix in enumerate(FIT) for cat, weight in enumerate(mix) if weight]
+            demand = [FIT[car][cat]*(profiles[i][3] if cat in APPAREL else 100) for car, cat in pairs]
             orders=[]
             visit_buckets=[]
             for scene, nvisits, npaid, cents in zip(range(len(SCENES)),visits_by_scene,paid_by_scene,cents_by_scene):
@@ -122,8 +132,7 @@ def main():
                 weights=[R.randint(65,165) for _ in people]
                 amounts=allocate(cents,weights)
                 for (user,dt),amount in zip(people,amounts):
-                    cat=R.choices(range(len(CATS)),category_weights)[0]
-                    car=R.randrange(len(CARS))
+                    car,cat=R.choices(pairs,demand)[0]
                     sku=cat*30+R.choices(range(30),[31-j for j in range(30)])[0]
                     touches = [R.randrange(len(SCENES)) for _ in range(R.choices([0,1,2],[40,43,17])[0])]
                     orders.append([user,str(dt),scene,car,cat,sku,amount,0,0,0,0,[*touches,scene]])
@@ -133,15 +142,15 @@ def main():
                 click_only = round((n-unpaid_order-cart_only)*R.uniform(.12,.19))
                 stages=[n-unpaid_order-cart_only-click_only,click_only,cart_only,unpaid_order]
                 for stage, count in enumerate(stages):
-                    dist=allocate(count,[R.randint(5,20) for _ in range(len(CARS)*len(CATS))])
-                    for j,q in enumerate(dist):
-                        if q: visit_buckets.append([scene,j//len(CATS),j%len(CATS),stage,q,q*R.choice([3,4,5,6])])
+                    dist=allocate(count,[weight*R.randint(85,115) for weight in demand])
+                    for (car,cat),q in zip(pairs,dist):
+                        if q: visit_buckets.append([scene,car,cat,stage,q,q*R.choice([3,4,5,6])])
             # Weighted selection assigns higher return propensity to apparel.
             by_propensity = sorted(range(len(orders)),
-                key=lambda j:R.random()**(1/(3.2 if orders[j][4]>=4 else 1.0)),reverse=True)
+                key=lambda j:R.random()**(1/(3.2 if orders[j][4] in APPAREL else 1.0)),reverse=True)
             for j in by_propensity[:f[i]]:
                 o=orders[j]
-                o[7]=R.choices([1,2,3],[18,10,72] if o[4]>=4 else [38,17,45])[0]
+                o[7]=R.choices([1,2,3],[18,10,72] if o[4] in APPAREL else [38,17,45])[0]
             for o in orders:
                 dt=date.fromisoformat(o[1])
                 if o[7]!=1: o[8]=str(dt+timedelta(days=R.randint(0,3)))
@@ -153,7 +162,7 @@ def main():
             assert sum(b[4] for b in visit_buckets)+len(orders)==v[i]
             assert sum(o[6] for o in orders if o[2]==0)==rgmv
             months_data[key] = {'month':key,'orders':orders,'unpaid':visit_buckets}
-    metadata = {'seasons':checks,'history':history,'cohorts':eligible,'categories':CATS,'cars':CARS,'scenes':SCENES,
+    metadata = {'seasons':checks,'history':history,'cohorts':eligible,'assortment':FIT,'categories':CATS,'cars':CARS,'scenes':SCENES,
                          'order_fields':['user','paid_date','scene','car','category','sku','amount_cents','refund_type','shipped_date','refund_completed_date','returned_date','touch_path'],
                          'refund_types':['none','pre_shipment_only','shipped_only','return_and_refund'],
                          'unpaid_fields':['scene','car','category','funnel_stage','visits','exposures'],

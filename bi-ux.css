@@ -89,13 +89,37 @@ main > .notice { margin-bottom:14px; }
 }
 
 /* 模块导览将业务问题与可点击入口并列，窄屏自然换行。 */
-.panel > .portfolio-map {
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));
-  gap:12px 20px;
-  padding:0;
-  list-style:none;
+/* 阅读顺序由业务分组组织，数值与标签对齐。 */
+.portfolio-stages,.snapshot-grid { display:grid; gap:14px; }
+.portfolio-stages { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.portfolio-stages h3 { font-size:16px; margin:0 0 12px; }
+.portfolio-stages ul,.funnel-steps { list-style:none; margin:0; padding:0; }
+.portfolio-stages li + li { margin-top:8px; }
+.module-card { width:100%; text-align:left; padding:12px; border:1px solid #d7e2ec; border-radius:8px; background:#f6f9fc; color:#19334e; cursor:pointer; }
+.module-card:hover,.method-item summary:hover { border-color:#829ebc; background:#edf4fa; }
+.module-card strong,.module-card > span { display:block; line-height:1.5; }
+.module-card strong { font-size:15px; }
+.module-card > span { font-size:14px; margin-top:4px; }
+.cards.snapshot-grid { grid-template-columns:repeat(4,minmax(0,1fr)); gap:0; }
+.snapshot-grid .card { border:0; border-radius:0; box-shadow:none; background:#f5f8fb; padding:16px; }
+.snapshot-grid .card:nth-child(n+5) { border-top:1px solid #d7e2ec; }
+.method-hub { background:white; border:1px solid #dae5ef; border-radius:10px; padding:16px; margin-top:16px; }
+.method-item summary { cursor:pointer; padding:13px 15px; min-height:44px; box-sizing:border-box; border:1px solid #d7e2ec; border-radius:8px; background:#f6f9fc; }
+.method-item + .method-item { margin-top:8px; }
+.funnel-steps { display:grid; gap:12px; }
+.funnel-steps li > div:first-child { display:flex; justify-content:space-between; gap:8px; }
+.funnel-steps small { color:#475b70; }
+.metric-track { background:#e9eff5; border-radius:5px; height:10px; overflow:hidden; }
+.metric-track i { display:block; height:100%; border-radius:inherit; background:#315d8a; }
+.funnel-steps .metric-track { height:16px; margin:5px 0; }
+.bar-row { display:grid; grid-template-columns:7em minmax(0,1fr) auto; align-items:center; gap:8px; margin:6px 0; }
+.repurchase-bars .bar-row { grid-template-columns:7em minmax(0,1fr); }
+.repurchase-bars { margin-bottom:12px; }
+.matrix-value { display:block; border-radius:4px; padding:5px; background:rgb(49 93 138 / var(--heat)); }
+.matrix-detail { margin-top:12px; }
+.matrix-detail summary { cursor:pointer; padding:8px 0; }
+@media(max-width:760px) {
+  .portfolio-stages { grid-template-columns:1fr; }
+  .cards.snapshot-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .snapshot-grid .card:nth-child(n+3) { border-top:1px solid #d7e2ec; }
 }
-.panel > .portfolio-map > li { margin:0; padding:8px 0; border-bottom:1px solid #dce5ee; }
-.portfolio-map button { text-align:left; font-weight:600; }
-.portfolio-map p { margin:4px 0 0; }
