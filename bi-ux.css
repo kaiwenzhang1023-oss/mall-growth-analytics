@@ -1,0 +1,89 @@
+/* 数字使用固定字宽，筛选刷新时更容易沿同一列扫视。 */
+.cards .v,.growth-plot text,.growth-caption,.bi-num,.bi-delta,.evidence-kpis b {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+.cards .k { display:flex; align-items:center; gap:5px; min-height:26px; height:auto; max-height:none; color:#344b63; font-size:15px; font-weight:650; line-height:1.4; }
+.cards .v { font-size:20px; line-height:1.35; overflow-wrap:normal; }
+.bi-value { display:inline-block; white-space:nowrap; }
+.bi-unit,.bi-arrow { font-size:.68em; font-weight:600; color:#526174; }
+.bi-arrow { margin-inline:.18em; }
+.cards .growth-note { margin:6px 0 0; font-size:12px; line-height:1.55; }
+.bi-delta { display:inline-block; padding:1px 6px; border-radius:4px; font-size:12px; font-weight:650; white-space:nowrap; background:#edf1f5; color:#435369; }
+.bi-delta[data-direction="up"] { background:#e8f5ed; color:#17613a; }
+.bi-delta[data-direction="down"] { background:#faeeed; color:#9b332d; }
+.bi-code,.method-body :not(pre)>code { font-family:ui-monospace,Consolas,monospace; font-size:.9em; background:#edf2f7; color:#2f4c69; border-radius:4px; padding:.08em .32em; }
+main > .notice { max-inline-size:76ch; line-height:1.65; }
+
+/* 给长表独立滚动区，避免表头随行滚走；保留细分隔线和行定位。 */
+.growth-tables,.bi-evidence-scroll { max-block-size:min(55vh,480px); overflow:auto; }
+.growth-tables .tbl,.bi-evidence-scroll .evidence-table { border-collapse:separate; border-spacing:0; }
+.growth-tables th,.growth-tables td,.bi-evidence-scroll th,.bi-evidence-scroll td { padding:7px 10px; border-bottom:1px solid #e5ebf1; text-align:left; }
+.growth-tables th,.bi-evidence-scroll th { position:sticky; top:0; z-index:1; background:#f1f5f9; color:#344b63; }
+.growth-tables .bi-num,.bi-evidence-scroll .bi-num { text-align:right; white-space:nowrap; }
+.growth-tables tbody tr:hover td,.bi-evidence-scroll tbody tr:hover td { background:#eef5fb; }
+.bi-presets { display:flex; align-items:center; gap:6px; flex-wrap:wrap; flex-basis:100%; }
+.bi-presets .btn { padding:5px 9px; font-size:12px; }
+.bi-presets .btn[aria-pressed="true"] { background:#e1edf9; border-color:#829eb9; color:#234d75; }
+.bi-help { display:inline-grid; place-items:center; flex:none; min-width:24px; min-height:24px; border:0; border-radius:4px; background:transparent; color:#315c85; cursor:pointer; font:inherit; font-size:15px; }
+.bi-help:hover { background:#e7eff7; }
+.bi-help:focus-visible,.bi-presets button:focus-visible,.growth-tables:focus-visible,.bi-evidence-scroll:focus-visible { outline:2px solid #315c85; outline-offset:2px; }
+.bi-popover { position:fixed; z-index:20000; width:min(320px,calc(100vw - 16px)); box-sizing:border-box; max-height:calc(100vh - 16px); overflow:auto; padding:10px 12px; border:1px solid #c9d8e7; border-radius:8px; background:#fff; color:#30435a; font-size:13px; line-height:1.6; box-shadow:0 6px 20px #172e4822; }
+.bi-popover[hidden] { display:none; }
+@media(max-width:640px){ .bi-help{min-width:32px;min-height:32px}.bi-presets .btn{min-height:34px} }
+
+/* 图表控件优先于坐标刻度，刻度的最终屏幕字号由 SVG 缩放比例校正。 */
+.panel:has(> .growth-plot) > h2 { font-size:16px; line-height:1.4; }
+.growth-switch .btn { font-size:14px; line-height:1.4; }
+.growth-legend span { font-size:13px; }
+@media(max-width:640px){
+  .cards .k { font-size:14px; }
+  .cards .v { font-size:19px; }
+  .growth-switch .btn { font-size:13px; }
+}
+
+/* 先读字段和动作，再读数值：导航、筛选与表头统一使用高对比的中等字重。 */
+#nav button { font-size:14px; line-height:1.45; }
+.logo small { font-size:12px; color:#c2d2e3; }
+#subtitle,main > .notice { font-size:13px; }
+#subtitle { color:#526174; }
+main > .notice { margin-bottom:14px; }
+.filters { gap:8px 12px; padding:12px; }
+.filters label,.bi-decision label { font-size:14px; font-weight:600; color:#344b63; }
+.filters select,.bi-decision .inputbox { font:inherit; font-size:14px; font-weight:400; line-height:1.45; }
+.filters .btn,.linkbtn,.bi-decision .btn { font-size:13px; line-height:1.4; }
+#filter-info { font-size:13px; color:#526174; font-variant-numeric:tabular-nums; }
+#content > .panel > h2,#content > h2,.method-hub h2 { font-size:16px; line-height:1.45; margin-bottom:10px; }
+.growth-tables .tbl,.bi-evidence-scroll .evidence-table { font-size:13px; line-height:1.45; }
+.growth-tables th,.bi-evidence-scroll th { font-weight:650; }
+.growth-tables td:not(.bi-num) { white-space:normal; }
+.growth-caption { font-size:13px; line-height:1.6; }
+.growth-note { font-size:13px; line-height:1.65; }
+.cards .growth-note { font-size:13px; }
+.portfolio-hero { padding:20px 24px; }
+.portfolio-role { margin-bottom:0; }
+.portfolio-eyebrow { font-size:12px; margin-bottom:8px; }
+.panel > ol { padding-inline-start:1.5em; font-size:14px; line-height:1.65; }
+.panel > ol > li + li { margin-top:4px; }
+
+/* 方法区沿用同一阅读层级，样本定义和适用边界保持可读。 */
+.method-item summary { font-size:15px; line-height:1.45; }
+.method-body,.method-body > p { font-size:14px; line-height:1.65; }
+.evidence-head { font-size:14px; }
+.evidence-kpis span { font-size:13px; font-weight:600; color:#435970; }
+.evidence-kpis b { font-size:17px; line-height:1.4; white-space:normal; overflow-wrap:anywhere; }
+.evidence-insight,.evidence-small,.method-note { font-size:13px; line-height:1.65; }
+.evidence-small { color:#526174; }
+.method-body pre { font-size:13px; line-height:1.55; overflow:auto; }
+.bi-decision label { display:block; margin:0 0 10px; }
+.bi-decision textarea { resize:vertical; }
+.bi-decision .inputbox { display:block; box-sizing:border-box; }
+.bi-decision pre { font-size:13px; overflow-wrap:anywhere; }
+
+@media(max-width:640px) {
+  .portfolio-hero { padding:16px 18px; }
+  .filters { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:end; }
+  .filters[hidden] { display:none; }
+  .filters select { min-width:0; width:100%; }
+  .filters .bi-presets,#filter-info { grid-column:1/-1; }
+  .filters #reset { justify-self:start; }
+}
