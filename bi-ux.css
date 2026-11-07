@@ -87,3 +87,15 @@ main > .notice { margin-bottom:14px; }
   .filters .bi-presets,#filter-info { grid-column:1/-1; }
   .filters #reset { justify-self:start; }
 }
+
+/* 模块导览将业务问题与可点击入口并列，窄屏自然换行。 */
+.panel > .portfolio-map {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));
+  gap:12px 20px;
+  padding:0;
+  list-style:none;
+}
+.panel > .portfolio-map > li { margin:0; padding:8px 0; border-bottom:1px solid #dce5ee; }
+.portfolio-map button { text-align:left; font-weight:600; }
+.portfolio-map p { margin:4px 0 0; }
