@@ -180,3 +180,53 @@ main > .notice { margin-bottom:14px; }
 .experiment-summary p { margin:6px 0 10px; }
 .experiment-summary .hero-primary { background:#254b70; color:white; border-color:#254b70; }
 .experiment-caution { color:#805118; }
+
+/* 能力入口使用真实链接，明确键盘焦点和跳转反馈。 */
+.skill-links { display:flex; flex-wrap:wrap; gap:8px; padding:0; margin:0; list-style:none; }
+.skill-links a,.result-link { display:inline-flex; align-items:center; gap:8px; padding:6px 9px; border:1px solid #d7e2ec; border-radius:6px; color:#244769; text-decoration:none; background:#f5f9fd; transition:transform .16s ease,background .16s ease,border-color .16s ease; }
+.skill-links a span { align-self:flex-start; font-size:12px; line-height:1; }
+.skill-links a:hover,.result-link:hover { transform:translateY(-1px); border-color:#829ebc; background:#eaf2fb; }
+.skill-links a:focus-visible,.result-link:focus-visible,.module-card:focus-visible,.method-item summary:focus-visible { outline:2px solid #315d8a; outline-offset:2px; }
+.module-card { display:block; box-sizing:border-box; text-decoration:none; transition:box-shadow .16s ease,border-color .16s ease; }
+.module-card strong { display:flex; justify-content:space-between; gap:8px; }
+.module-card:hover { box-shadow:0 2px 8px rgb(37 75 112 / .09); }
+.module-arrow { flex:none; transition:transform .16s ease; }
+.module-card:hover .module-arrow { transform:translateX(2px); }
+#title { scroll-margin-block-start:12px; }
+
+/* 流水线以编号节点和连接线表达次序，窄屏改用纵向流。 */
+.data-flow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:15px; }
+.data-flow li { display:grid; gap:4px; align-content:start; position:relative; min-width:0; font-size:13px; }
+.pipeline-index { color:#426487; font-variant-numeric:tabular-nums; font-size:11px; font-weight:700; }
+.data-flow li+li::before { content:""; position:absolute; inset-inline-start:-16px; top:50%; width:15px; border-top:1px solid #8ba6bf; }
+.data-flow li+li::after { content:""; position:absolute; inset-inline-start:-6px; top:calc(50% - 2px); width:4px; height:4px; border-top:1px solid #8ba6bf; border-right:1px solid #8ba6bf; transform:rotate(45deg); }
+
+/* 战报以前后列和独立变化徽章对照，保持数字右对齐。 */
+.result-table { font-variant-numeric:tabular-nums; min-width:470px; }
+.result-table th,.result-table td { text-align:right; }
+.result-table th:first-child { text-align:left; }
+.result-before { color:#596d81; }
+.result-delta { display:inline-block; padding:3px 7px; border-radius:999px; background:#e8f5ed; color:#17613a; font-size:12px; white-space:nowrap; }
+
+/* 原生 details 保留语义，Chevron 旋转并在展开时轻微过渡。 */
+.method-item summary { display:flex; align-items:center; gap:9px; list-style:none; }
+.method-item summary::-webkit-details-marker { display:none; }
+.method-chevron { flex:none; color:#315d8a; transition:transform .18s ease; }
+.method-item[open] .method-chevron { transform:rotate(90deg); }
+.method-title { flex:1; }
+.method-tag { flex:none; padding:2px 6px; border-radius:4px; background:#edf1f5; color:#435369; font-size:12px; }
+.method-item[open] .method-body { animation:method-reveal .18s ease-out; }
+@keyframes method-reveal { from { opacity:.55; transform:translateY(-3px); } to { opacity:1; transform:translateY(0); } }
+.method-snippet { position:relative; }
+.method-snippet pre { padding:42px 12px 12px; background:#eef3f8; color:#233e58; }
+.method-copy { position:absolute; top:6px; right:6px; }
+@media(max-width:640px) {
+  .data-flow { grid-template-columns:1fr; gap:10px; }
+  .data-flow li { grid-template-columns:auto 1fr; align-items:center; }
+  .data-flow li+li::before { top:-11px; inset-inline-start:16px; height:10px; width:0; border-top:0; border-left:1px solid #8ba6bf; }
+  .data-flow li+li::after { top:-5px; inset-inline-start:14px; transform:rotate(135deg); }
+}
+@media(prefers-reduced-motion:reduce) {
+  .skill-links a,.result-link,.module-card,.module-arrow,.method-chevron { transition:none; }
+  .method-item[open] .method-body { animation:none; }
+}
