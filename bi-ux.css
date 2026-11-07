@@ -211,9 +211,9 @@ main > .notice { margin-bottom:14px; }
 /* 原生 details 保留语义，Chevron 旋转并在展开时轻微过渡。 */
 .method-item summary { display:flex; align-items:center; gap:9px; list-style:none; }
 .method-item summary::-webkit-details-marker { display:none; }
-.method-chevron { flex:none; color:#315d8a; transition:transform .18s ease; }
+.method-item .method-chevron { width:16px; height:16px; flex:0 0 16px; color:#315d8a; transition:transform .18s ease; }
 .method-item[open] .method-chevron { transform:rotate(90deg); }
-.method-title { flex:1; }
+.method-title { flex:1; min-width:0; overflow-wrap:anywhere; }
 .method-tag { flex:none; padding:2px 6px; border-radius:4px; background:#edf1f5; color:#435369; font-size:12px; }
 .method-item[open] .method-body { animation:method-reveal .18s ease-out; }
 @keyframes method-reveal { from { opacity:.55; transform:translateY(-3px); } to { opacity:1; transform:translateY(0); } }
