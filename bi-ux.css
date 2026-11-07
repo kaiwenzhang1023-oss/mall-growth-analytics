@@ -138,3 +138,21 @@ main > .notice { margin-bottom:14px; }
 .purchase-branches > div { display:grid; text-align:center; gap:4px; padding:8px; background:#f4f8fc; border:1px solid #dce5ed; border-radius:8px; }
 .touch-chart .bar-row { grid-template-columns:7em minmax(0,1fr); }
 .touch-chart { display:grid; gap:8px; margin-bottom:14px; }
+
+.funnel-rates { position:relative; display:flex; flex-wrap:wrap; justify-content:center; gap:4px 16px; padding:0 8px 8px; text-align:center; font-size:13px; color:#344b63; }
+
+/* 沿用深蓝和浅灰蓝，按业务层级压缩信息密度。 */
+.card,.tbl td,.tbl th,.evidence-table,.growth-plot text { font-variant-numeric:tabular-nums; }
+.kpi-group-label { margin:12px 0 6px; font-size:14px; color:#344b63; }
+.capability-tags span,.data-flow li { padding:5px 8px; border:1px solid #dce5ed; border-radius:5px; background:#f4f8fc; }
+.data-flow { display:flex; flex-wrap:wrap; gap:8px 14px; list-style:none; padding:0; }
+.data-flow li + li::before { content:'→ '; color:#526174; }
+.quadrant-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1px; background:#dce5ed; border:1px solid #dce5ed; }
+.quadrant-grid section { padding:10px; background:#f5f8fb; min-width:0; }
+.quadrant-grid p { margin:5px 0 0; overflow-wrap:anywhere; }
+.waterfall .bar-row { grid-template-columns:4em minmax(0,1fr) minmax(8em,auto); }
+.waterfall .bar-row > span { text-align:right; font-variant-numeric:tabular-nums; }
+.method-drawer { box-sizing:border-box; inset:0 0 0 auto; margin:0; width:min(540px,100vw); max-width:100%; height:100%; max-height:100%; padding:18px; border:0; border-left:1px solid #dce5ed; color:#19334e; }
+.method-drawer::backdrop { background:rgb(20 42 65 / .3); }
+.method-drawer pre { white-space:pre-wrap; overflow-wrap:anywhere; padding:12px; background:#f5f8fb; }
+.sku-scatter { display:block; width:min(100%,620px); margin:4px auto 10px; background:#f8fbfd; }

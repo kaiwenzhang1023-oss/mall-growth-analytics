@@ -125,17 +125,19 @@ def main():
             demand = [FIT[car][cat]*(profiles[i][3] if cat in APPAREL else 100) for car, cat in pairs]
             orders=[]
             visit_buckets=[]
+            # Allocate about 30% to Buy Now within each eligible funnel stage.
+            route_counts = [0, 0, 0, 0]
             for scene, nvisits, npaid, cents in zip(range(len(SCENES)),visits_by_scene,paid_by_scene,cents_by_scene):
                 assert nvisits >= npaid
                 prior=sum(paid_by_scene[:scene])
                 people=planned[prior:prior+npaid]
                 weights=[R.randint(65,165) for _ in people]
                 amounts=allocate(cents,weights)
-                for (user,dt),amount in zip(people,amounts):
+                for order_index, ((user,dt),amount) in enumerate(zip(people,amounts), start=prior):
                     car,cat=R.choices(pairs,demand)[0]
                     sku=cat*30+R.choices(range(30),[31-j for j in range(30)])[0]
                     touches = [R.randrange(len(SCENES)) for _ in range(R.choices([0,1,2],[40,43,17])[0])]
-                    orders.append([user,str(dt),scene,car,cat,sku,amount,0,0,0,0,[*touches,scene], int((amount+dt.day+scene)%4==0)])
+                    orders.append([user,str(dt),scene,car,cat,sku,amount,0,0,0,0,[*touches,scene], ((order_index+1)*3//10-order_index*3//10)])
                 n = nvisits-npaid
                 unpaid_order = min(n,round(npaid*R.uniform(.26,.48)))
                 cart_only = round((n-unpaid_order)*R.uniform(.037,.051))
@@ -144,7 +146,11 @@ def main():
                 for stage, count in enumerate(stages):
                     dist=allocate(count,[weight*R.randint(85,115) for weight in demand])
                     for (car,cat),q in zip(pairs,dist):
-                        if q: visit_buckets.append([scene,car,cat,stage,q,q*R.choice([3,4,5,6]),q//4 if stage==3 else 0])
+                        if q:
+                            before = route_counts[stage]
+                            route_counts[stage] += q
+                            direct = (before+q)*3//10-before*3//10 if stage in (2, 3) else 0
+                            visit_buckets.append([scene,car,cat,stage,q,q*R.choice([3,4,5,6]),direct])
             # Weighted selection assigns higher return propensity to apparel.
             by_propensity = sorted(range(len(orders)),
                 key=lambda j:R.random()**(1/(3.2 if orders[j][4] in APPAREL else 1.0)),reverse=True)
