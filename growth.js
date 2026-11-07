@@ -134,7 +134,7 @@ function seasonChart() {
   return panel((full?'经营年同比 · ':'同一季节，前后两年对比 · ')+metricNames[state.metric],switches(true)+`<div class="growth-switch">${options.map(key=>`<button class="btn" data-metric="${key}" aria-pressed="${state.metric===key}">${metricNames[key]}</button>`).join('')}</div>`+
     plot(labels,series,formatter,true)+`<div class="growth-caption" role="status">${pair[0].months[i]} ${formatter(a[state.metric])}（${detail(a)}）<br>${pair[1].months[i]} ${formatter(b[state.metric])}（${detail(b)}）<br>${diff}${event?`<br>模拟活动节点 · ${event}`:''}</div><p class="growth-note">${scope}响应入口、车型和品类筛选。</p>`);
 }
-function home() {
+function simulatedSeasonSummary() {
 
   const [coldA,warmA,coldB,warmB]=meta.seasons.map(season=>season.months);
   const cohortPairs=[[[0,1],[2,3]],[[1],[3]],[[0],[2]]];
@@ -152,6 +152,35 @@ function home() {
     return [name,avg(a,months[0])+' → '+avg(b,months[1]),pct(a.conversion)+' → '+pct(b.conversion),
       pct(a.refundRate)+' → '+pct(b.refundRate),repeat.join(' → ')];
   });
+  return `<details class="panel"><summary>查看模拟经营周期对照</summary>
+    ${table(['周期','月均成交额','成单率','支付订单退款率','首购后 90 日复购率'],summary)}
+    <p class="growth-note">按演示数据计算。淡季取 10–12 月首购买家，旺季取 4–6 月首购买家，均跟踪满 90 日。完整经营年合并当年两组样本后按人数计算。</p>
+  </details>`;
+}
+function moduleHash(index) {
+  return index<0?'#project-intro':'#module-'+String(index+1).padStart(2,'0');
+}
+function moduleFromHash() {
+  const match=location.hash.match(/^#module-0([1-7])$/);
+  return match?Number(match[1])-1:-1;
+}
+function historicalResults() {
+  const measures=[
+    ['旺季月均成交额',94.7,232.4,n=>n.toFixed(1)+' 万元','relative'],
+    ['推荐场景 GMV 月占比均值',.18,.35,n=>Math.round(n*100)+'%','points'],
+    ['推荐流成单率',.008,.019,n=>(n*100).toFixed(1)+'%','points']
+  ];
+  const rows=measures.map(([label,before,after,format,kind])=>{
+    const change=after-before;
+    const formatted=kind==='relative'?pct(ratio(change,before)):pp(change);
+    return `<tr><th scope="row">${label}</th><td class="result-before">${format(before)}</td><td><strong>${format(after)}</strong></td><td><span class="result-delta">${change>=0?'▲':'▼'} ${change>0&&!formatted.startsWith('+')?'+':''}${formatted}</span></td></tr>`;
+  });
+  return panel('历史项目成果',`<p class="growth-note">旺季指标对比 2023 与 2024 年 4–9 月。推荐贡献对比完整经营年，2022.10–2023.09 与 2023.10–2024.09。</p>
+    <div class="growth-tables"><table class="tbl result-table"><thead><tr><th scope="col">经营指标</th><th scope="col">优化前</th><th scope="col">优化后</th><th scope="col">变化</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>
+    <p class="growth-note">注：本模块指标基于作者历史真实操盘业务同比例脱敏核算，独立展示个人业务成果，不与下方演示看板的模拟数据集混算。</p>
+    <div class="growth-switch"><a class="result-link" href="#module-03" data-tab="2">查看模拟复购分段 →</a><a class="result-link" href="#module-06" data-tab="5" data-case-year>查看模拟触点对比 →</a></div>`);
+}
+function home() {
   const questions=[
     'GMV、订单和售后怎么变？先看规模、趋势及增长来源。',
     '流量在哪里流失？比较曝光到支付的各环节和入口表现。',
@@ -170,17 +199,13 @@ function home() {
   ${panel('项目概述与交付范围',`<div class="project-overview">
     <section><h3>业务背景</h3><p>面向摩托装备商城，为运营、类目操盘手、分析师提供一站式经营决策看板，定位流失、验证增长策略，支撑大促复盘与异常处置。</p></section>
     <section><h3>我的职责</h3><p>独立完成数据集仿真、指标体系设计、互斥转化漏斗建模、实验方案设计与复盘闭环，把经营问题量化，输出可落地、可验收的经营动作。</p></section>
-    <section><h3>业务建模能力</h3><div class="growth-switch capability-tags"><span>指标体系构建</span><span>互斥漏斗建模</span><span>A/B 统计检验</span><span>RFM 用户分群</span><span>异常归因</span></div></section>
-    <section><h3>数据加工链路</h3><ol class="data-flow"><li>原始日志</li><li>Pandas 清洗聚合</li><li>业务指标层</li><li>决策看板</li></ol></section>
-    </div><p class="notice">看板使用仿真数据复现经营链路，历史项目成果独立列示。</p>`)}
-  ${panel('历史项目成果',`<div class="result-lead"><span>旺季月均成交额</span><strong>94.7 万元 → 232.4 万元</strong><span>约 +145%</span></div>
-    <p class="growth-note">前期经营年 2022.10–2023.09 · 后期经营年 2023.10–2024.09。每年 4–9 月为旺季，其余为淡季。</p>`+
-    table(['周期','月均成交额','成单率','支付订单退款率','首购后 90 日复购率'],summary)+
-    '<p class="growth-note">表内周期指标按模拟明细复算。淡季取 10–12 月首购买家，旺季取 4–6 月首购买家，均跟踪满 90 日。完整经营年合并当年两组样本后按人数计算。 <button class="linkbtn" data-tab="2">查看复购分段 →</button></p>'+
-    '<p class="result-secondary"><strong>完整经营年 · 推荐贡献</strong><br>推荐场景 GMV 占比均值 18% → 35% · 推荐流成单率 0.8% → 1.9% <button class="linkbtn" data-tab="5" data-case-year>查看触点对比 →</button><br><span class="growth-note">本站复盘中，推荐场景指首页推荐流入口，购物车推荐单列。成交额占比先按月计算再取均值，成单率为首页推荐流支付订单数除以该入口曝光访问 PV。</span></p>')}
+    <section><h3>业务建模能力</h3><ul class="skill-links">${[['指标体系构建',0],['互斥漏斗建模',1],['A/B 统计检验',3],['RFM 用户分群',2],['异常归因',4]].map(([label,i])=>`<li><a href="${moduleHash(i)}" data-tab="${i}">${label}<span aria-hidden="true">↗</span></a></li>`).join('')}</ul></section>
+    <section><h3>数据加工链路</h3><ol class="data-flow">${['原始日志','Pandas 清洗聚合','业务指标层','决策看板'].map((name,i)=>`<li><span class="pipeline-index" aria-hidden="true">0${i+1}</span><span>${name}</span></li>`).join('')}</ol></section>
+    </div>`)}
+  ${historicalResults()}
   ${panel('从看经营到做决策',`<div class="portfolio-stages">${[['看经营',0,3],['验证与诊断',3,5],['复盘与行动',5,7]].map(([label,start,end])=>`<section><h3>${label}</h3><ul>${pages.slice(start,end).map((name,index)=>{
     const i=start+index;
-    return `<li><button class="module-card" data-tab="${i}"><strong>${String(i+1).padStart(2,'0')} · ${name} <span aria-hidden="true">→</span></strong><span>${questions[i]}</span></button></li>`;
+    return `<li><a class="module-card" href="${moduleHash(i)}" data-tab="${i}"><strong>${String(i+1).padStart(2,'0')} · ${name} <span class="module-arrow" aria-hidden="true">→</span></strong><span>${questions[i]}</span></a></li>`;
   }).join('')}</ul></section>`).join('')}</div>`)}
   ${methodHub(['rfm','kmeans','abc','attr','ab'],'以下为独立方法样本。')}`;
 }
@@ -214,7 +239,7 @@ function overview(s) {
   ];
   return panel('这段时间经营得怎么样',`<p class="growth-note">${selectedPeriod().join(' 至 ')}。当前期指标随日期筛选；月度趋势使用完整自然月并响应入口、车型和品类。</p>`+
     groups.map(([label,kpis])=>`<h3 class="kpi-group-label">${label}</h3><div class="cards snapshot-grid">${kpis.join('')}</div>`).join(''))+
-    lead+seasonChart()+panel('24 个月经营全景',trend+'<p class="growth-note">淡蓝底为淡季。此图固定展示完整区间。</p>')+
+    lead+simulatedSeasonSummary()+seasonChart()+panel('24 个月经营全景',trend+'<p class="growth-note">淡蓝底为淡季。此图固定展示完整区间。</p>')+
     panel((state.season==='full'?'经营年':'同季')+' 成交额变化来自哪里？',attribution(seasonPair(true)));
 }
 function funnel(s) {
@@ -528,6 +553,7 @@ function update() {
   const tabs=[-1,...pages.map((_,i)=>i)];
   $('nav').innerHTML=tabs.map((i,j)=>`<button data-tab="${i}" class="${i===state.tab?'active':''}" ${i===state.tab?'aria-current="page"':''}>${i<0?'⌂':String(i+1).padStart(2,'0')} · ${names[j]}</button>`).join('');
   $('title').textContent=names[state.tab+1];
+  $('content').closest('main').id=moduleHash(state.tab).slice(1);
   $('subtitle').textContent='24 个月模拟经营案例 · 2022.10–2024.09';
   const scoped=[0,1,2,4].includes(state.tab);
   $('start').closest('.filters').hidden=!scoped;
@@ -545,6 +571,7 @@ function update() {
 }
 function activate(target) {
   const d=target.dataset;
+  const previousTab=state.tab;
   if(d.tab!==undefined) {
     state.tab=Number(d.tab);state.point=0;
     if(d.caseYear!==undefined) state.season='full';
@@ -553,6 +580,7 @@ function activate(target) {
       state.season='warm';state.metric='gmv';
     }
   }
+  else if(d.copyMethod!==undefined) {copyMethodCode(target);return;}
   else if(d.goodsTab) {state.goodsTab=d.goodsTab;state.point=0;}
   else if(d.actionSource!==undefined) {
     const record=actions[Number(d.actionSource)];
@@ -564,6 +592,7 @@ function activate(target) {
       $('end').value=record.month;
       ['scene','car','cat'].forEach((id,i)=>{$(id).value=record.scope[i];});
       state.campaign=null;
+      history.pushState(null,'',moduleHash(state.tab));
       $('end').dispatchEvent(new Event('change'));
       return;
     }
@@ -632,12 +661,22 @@ function activate(target) {
     else target.textContent='请选中文字复制';
     return;
   } else return;
+  if((state.tab!==previousTab||d.tab!==undefined)&&location.hash!==moduleHash(state.tab)) {
+    history.pushState(null,'',moduleHash(state.tab));
+  }
   update();
+  if(d.tab!==undefined)focusModule();
   if(d.experimentAction!==undefined) $('record-action').focus();
   if(target.matches('button')&&(d.point!==undefined||d.metric||d.season)) {
     const key=d.point!==undefined?'point':d.metric?'metric':'season';
     document.querySelector(`button[data-${key}="${d[key]}"]`)?.focus({preventScroll:true});
   }
+}
+function focusModule() {
+  const title=$('title');
+  title.tabIndex=-1;
+  title.focus({preventScroll:true});
+  title.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});
 }
 function fillOptions(id,values,all=false) {
   $(id).replaceChildren(...(all?[new Option('全部','')]:[]),...values.map((x,i)=>new Option(x,all?i:x)));
@@ -706,9 +745,22 @@ async function init() {
     });
   });
   document.addEventListener('click',event=>{
-    const target=event.target.closest('button,[data-point]');
-    if(target)activate(target);
+    const target=event.target.closest('button,a[data-tab],[data-point]');
+    if(!target)return;
+    if(target.matches('a[data-tab]')) {
+      if(event.button||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+      event.preventDefault();
+    }
+    activate(target);
   });
+  window.addEventListener('hashchange',()=>{
+    state.tab=moduleFromHash();
+    state.point=0;
+    update();
+    focusModule();
+  });
+  state.tab=moduleFromHash();
   update();
+  if(state.tab>=0)focusModule();
 }
 init().catch(()=>{$('content').textContent='模拟数据加载失败，请刷新页面后重试。';});
