@@ -277,3 +277,7 @@ main > .notice { margin-bottom:14px; }
   .analysis-view-options button span,.analysis-view-options button small { display:none; }
   .analysis-mobile-note { display:block; }
 }
+
+.experiment-slices { display:flex; flex-wrap:wrap; gap:10px 14px; padding:12px; border:1px solid #dce5ef; border-radius:8px; background:#f5f8fc; }
+.experiment-slices label { display:grid; gap:4px; flex:1 1 130px; max-width:220px; }
+.experiment-slices .inputbox { min-height:40px; margin:0; background:#fff; }
