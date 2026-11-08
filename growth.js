@@ -186,9 +186,20 @@ function historicalResults() {
     const favorable=lowerIsBetter?change<0:change>0;
     return `<tr><th scope="row"><button type="button" class="result-metric" data-bi-metric="历史 · ${label}" aria-expanded="false">${label} <span aria-hidden="true">ⓘ</span></button></th><td class="result-before">${format(before)}</td><td><strong>${format(after)}</strong></td><td><span class="result-delta" data-favorable="${favorable}">${formatted}</span></td></tr>`;
   }).join('')}</tbody></table></div>`;
-  return panel('历史项目成果',`<p class="growth-note">本板块为本人历史真实操盘业务成果。对比周期：优化前 2022.10–2023.09｜优化后 2023.10–2024.09。旺季为 4–9 月，淡季为 10 月至次年 3 月。数据经过脱敏比例核算，与下方模拟看板独立展示。</p>
+  const [,peakMeasures]=measures.find(([period])=>period==='旺季');
+  const peakSummary=[0,1,3,2].map(i=>{
+    const [label,before,after,kind]=peakMeasures[i];
+    const isAmount=kind==='amount';
+    const change=after-before;
+    const delta=isAmount?'+'+pct(ratio(change,before)):(change>0?'+':'')+change.toFixed(2);
+    const range=isAmount?`${before.toFixed(2)} → ${after.toFixed(2)} 万元`:`${before.toFixed(2)}% → ${after.toFixed(2)}%`;
+    return `<li><span>${label}</span><strong>${delta}${isAmount?'':' <small>个百分点</small>'}</strong><span class="result-before">${range}</span></li>`;
+  }).join('');
+  return panel('历史项目成果',`<p class="result-context"><b>真实业务脱敏 · 旺季对比</b><span>2023.04–2023.09 → 2024.04–2024.09</span></p>
+    <ul class="result-highlights" aria-label="旺季成果摘要">${peakSummary}</ul>
     <p class="result-insight"><strong>核心洞察：通过推荐体系重构、用户分层与召回策略组合优化，实现 GMV、转化、复购同步抬升，同时持续控制退款率下行。</strong></p>
     <section class="result-section"><h3>大盘经营提升</h3>
+    <p class="growth-note">经营年：优化前 2022.10–2023.09｜优化后 2023.10–2024.09。旺季为 4–9 月，淡季为 10 月至次年 3 月。</p>
     ${measures.slice(0,3).map((measure,i)=>`<details class="result-period"${i===0?' open':''}><summary>${measure[0]}</summary>${resultTable(measure)}</details>`).join('')}
     </section>
     <section class="result-section"><h3>推荐策略专项贡献（完整经营年）</h3>
@@ -397,8 +408,14 @@ function merchandise(s) {
 }
 function buyerGoods(s) {
   const goods=state.goodsTab==='goods';
-  const tabs=`<div class="growth-switch" role="group" aria-label="用户与商品分析视图"><button class="btn" data-goods-tab="users" aria-pressed="${!goods}">用户生命周期与 RFM</button><button class="btn" data-goods-tab="goods" aria-pressed="${goods}">商品动销与品类矩阵</button></div>`;
-  if(!goods)return tabs+panel('用户生命周期与运营建议',lifecycle(s.orders,s.orders))+repurchase()+rolling()+dormant()+methodHub(['rfm','kmeans'],'规则分层及聚类使用独立方法样本。');
+  const tabs=`<section class="panel analysis-views" aria-labelledby="analysis-view-title">
+    <h2 id="analysis-view-title">分析视角</h2>
+    <div class="analysis-view-options" role="group" aria-labelledby="analysis-view-title">
+      <button type="button" data-goods-tab="users" aria-pressed="${!goods}"><strong>用户经营</strong><span>用户分层 · 生命周期 · 复购</span><small>识别值得留存、促复购或召回的人群</small></button>
+      <button type="button" data-goods-tab="goods" aria-pressed="${goods}"><strong>商品分析</strong><span>商品动销 · 品类矩阵</span><small>识别值得重点运营的商品和品类</small></button>
+    </div>
+  </section>`;
+  if(!goods)return tabs+panel('用户生命周期与运营建议','<p class="growth-note analysis-mobile-note">按用户分层识别留存、促复购和召回机会。</p>'+lifecycle(s.orders,s.orders))+repurchase()+rolling()+dormant()+methodHub(['rfm','kmeans'],'规则分层及聚类使用独立方法样本。');
   const buyerIds=new Set(s.orders.map(o=>o[0]));
   const [from,to]=selectedPeriod();
   const first=[...buyerIds].filter(u=>{
@@ -424,9 +441,9 @@ function buyerGoods(s) {
     groups[k][1]+=v;
   }
   const repeatBuyers=[...byBuyer.values()].filter(b=>b.count>=2);
-  return tabs+`<div class="cards">${card('支付买家 UV',fmt(s.buyers))}${card('首购买家占比',pct(ratio(first,s.buyers)),fmt(first)+' 名样本内首购买家')}${card('窗口内多次支付买家',fmt(repeatBuyers.length))}</div>`+
+  return tabs+`<p class="growth-note analysis-mobile-note">按商品动销与品类表现识别经营重点。</p><div class="cards">${card('支付买家 UV',fmt(s.buyers))}${card('首购买家占比',pct(ratio(first,s.buyers)),fmt(first)+' 名样本内首购买家')}${card('窗口内多次支付买家',fmt(repeatBuyers.length))}</div>`+
     merchandise(s)+panel('销售额 × 毛利率四象限',productQuadrants(s.orders))+
-    panel('购买该品类的用户分层',`<label class="segment-picker"><span>选择商品品类</span><select id="segment-category" class="inputbox"><option value="">全部</option>${meta.categories.map((name,i)=>`<option value="${i}"${String(i)===state.segmentCategory?' selected':''}>${name}</option>`).join('')}</select></label>`+
+    panel('购买该品类的用户分层',`<label class="segment-picker"><strong>商品品类</strong><select id="segment-category" class="inputbox"><option value="">全部</option>${meta.categories.map((name,i)=>`<option value="${i}"${String(i)===state.segmentCategory?' selected':''}>${name}</option>`).join('')}</select></label>`+
       lifecycle(state.segmentCategory? s.orders.filter(o=>o[4]===Number(state.segmentCategory)):s.orders,s.orders))+panel('商品 ABC · 哪些商品贡献了成交额？',table(['贡献分组','成交商品规格数','成交额','成交额占比'],Object.entries(groups).map(([k,[n,v]])=>[abcNames[k],fmt(n),money(v),pct(ratio(v,s.gmv))])))+
     methodHub(['rfm','kmeans','abc'],'以下分层和聚类是独立方法样本。');
 }
@@ -683,6 +700,7 @@ function activate(target) {
   }
   update();
   if(d.tab!==undefined)focusModule();
+  if(d.goodsTab)document.querySelector('.analysis-view-options [aria-pressed="true"]').focus({preventScroll:true});
   if(d.experimentAction!==undefined) $('record-action').focus();
   if(target.matches('button')&&(d.point!==undefined||d.metric||d.season)) {
     const key=d.point!==undefined?'point':d.metric?'metric':'season';
