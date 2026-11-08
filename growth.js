@@ -755,6 +755,12 @@ async function init() {
   document.addEventListener('change',event=>{
     const target=event.target;
     if(target.id==='segment-category') {state.segmentCategory=target.value;update();$('segment-category').focus();}
+    if(target.dataset.experimentSlice) {
+      const key=target.dataset.experimentSlice;
+      experimentScope[key]=target.value;
+      update();
+      document.querySelector(`[data-experiment-slice="${key}"]`).focus({preventScroll:true});
+    }
     if(target.dataset.ledgerFilter) {
       ledgerFilters[target.dataset.ledgerFilter]=target.value;
       update();
