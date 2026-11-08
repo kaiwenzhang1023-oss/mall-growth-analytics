@@ -168,15 +168,15 @@ function recommendationMetrics() {
   return {control,test,change:test-control,refundControl,refundTest,refundChange:refundTest-refundControl,
     refundEvents:x.controlRefunded+x.testRefunded,...experimentReadout(x.controlPaid,x.testPaid,x.usersPerGroup)};
 }
-// 合成周度明细。每周每人只归入一个首次入组品类和来源渠道，两个实验臂样本数相同。
+// 合成明细按固定类目顺序排列，每类依次为直达、站内进入；单元格为每组人数、对照支付、实验支付。
+const experimentCategories=['头盔','骑行服','骑行靴','手套','护具','电子设备','配件耗材','未识别'];
+const experimentChannels=['打开 App 直达首页','从 App 内其他页面进入首页'];
 const experimentWeeks=[
-  ['05.06–05.12',[[510,3,9],[290,2,5],[450,3,8],[250,1,4],[310,2,5],[190,1,2]]],
-  ['05.13–05.19',[[480,3,10],[320,2,6],[420,4,8],[280,2,4],[300,2,5],[200,1,3]]],
-  ['05.20–05.26',[[460,3,10],[340,2,6],[410,3,8],[290,2,5],[320,2,6],[180,1,3]]],
-  ['05.27–06.02',[[470,4,11],[330,3,7],[430,4,9],[270,2,5],[290,2,6],[210,1,3]]]
+  ['05.06–05.12',[[317,2,3],[130,0,1],[227,1,4],[122,1,2],[136,1,4],[61,0,2],[121,1,1],[78,1,0],[106,0,3],[78,0,2],[91,1,0],[87,0,0],[166,1,3],[113,1,2],[106,1,4],[61,1,2]]],
+  ['05.13–05.19',[[264,2,5],[128,1,2],[204,2,5],[128,1,3],[144,1,1],[80,1,0],[144,1,3],[104,0,2],[84,0,4],[72,0,2],[84,1,1],[88,1,1],[156,2,4],[120,1,3],[120,0,0],[80,0,0]]],
+  ['05.20–05.26',[[271,2,5],[137,1,2],[224,2,6],[145,1,3],[118,0,1],[64,0,1],[130,1,4],[96,1,2],[82,1,0],[72,0,0],[94,1,2],[96,1,2],[177,1,5],[136,1,3],[94,0,1],[64,0,1]]],
+  ['05.27–06.02',[[280,3,7],[143,1,3],[187,1,2],[119,1,1],[151,1,4],[88,0,2],[117,1,5],[87,1,3],[82,1,1],[72,1,1],[105,1,3],[103,0,2],[140,1,1],[111,1,1],[128,1,3],[87,1,2]]]
 ];
-const experimentCategories=['骑行装备','车型配件','养护用品'];
-const experimentChannels=['App 直访','站内导流'];
 const experimentScope={week:'',category:'',channel:''};
 function experimentBreakdown() {
   const weeks=experimentWeeks.flatMap(([label,cells],index)=>{
@@ -192,14 +192,30 @@ function experimentBreakdown() {
   const rate=(paid,users)=>pct(ratio(paid,users));
   const row=({label,users,control,test})=>[label,fmt(users),`${fmt(control)} 人（${rate(control,users)}）`,`${fmt(test)} 人（${rate(test,users)}）`,pp(ratio(test-control,users))];
   const total=weeks.reduce((acc,w)=>({label:'所选切片合计',users:acc.users+w.users,control:acc.control+w.control,test:acc.test+w.test}),{users:0,control:0,test:0});
-  return panel('入组周趋势与切片',`<p class="growth-note">选择首次入组时的品类和来源渠道，可交叉查看同一组实验。渠道指到达首页推荐前的来源，分组后产生的购买行为不参与切片定义。</p>
-    <div class="experiment-slices">${picker('week','入组周',experimentWeeks.map(([label])=>label))}${picker('category','品类',experimentCategories)}${picker('channel','来源渠道',experimentChannels)}</div>
-    <p class="growth-note" role="status">当前切片每组 ${fmt(total.users)} 人。切片仅用于描述性观察，正式检验与放量判断基于全样本。</p>`+
+  const scopeLabel=(key,options)=>experimentScope[key]===''?'全部':options[Number(experimentScope[key])];
+  const weekLabels=experimentWeeks.map(([label])=>label);
+  const small=total.users<200||Math.min(total.control,total.test)<10;
+  return panel('入组周趋势与切片',`<p class="growth-note">品类按入组前可观测偏好归类，取最强偏好对应的一个一级类目；信号不足归为「未识别」。分组后的购买行为不参与归类。</p>
+    <div class="experiment-slices">${picker('week','入组周',weekLabels)}${picker('category','入组前偏好品类',experimentCategories)}${picker('channel','来源渠道',experimentChannels)}</div>
+    <p class="growth-note">渠道按首次入组路径归类。「打开 App 直达首页」指打开后直接到首页；「从 App 内其他页面进入首页」指先浏览其他站内页面，再进入首页推荐。</p>
+    <div class="experiment-slice-summary" role="status">
+      <strong>当前范围：入组周 ${scopeLabel('week',weekLabels)} · 品类 ${scopeLabel('category',experimentCategories)} · 渠道 ${scopeLabel('channel',experimentChannels)}</strong>
+      <p>对照组：${fmt(total.control)} / ${fmt(total.users)} 人（${rate(total.control,total.users)}） · 实验组：${fmt(total.test)} / ${fmt(total.users)} 人（${rate(total.test,total.users)}） · 绝对差值 ${pp(ratio(total.test-total.control,total.users))}</p>
+      ${small?'<p class="experiment-caution">小样本提示：每组入组少于 200 人，或任一组支付少于 10 人，比例容易波动。</p>':''}
+      <p class="growth-note">切片用于描述性观察；正式检验与放量判断基于全样本。小样本阈值仅用于阅读提示。</p>
+    </div>`+
     plot(weeks.map(w=>w.label.split('–')[0]),[
       {name:'对照组',color:blue,values:weeks.map(w=>ratio(w.control,w.users))},
       {name:'实验组',color:teal,values:weeks.map(w=>ratio(w.test,w.users))}
     ],pct)+table(['模拟入组周','每组入组人数','对照组支付人数（率）','实验组支付人数（率）','绝对变化'],[...weeks.map(row),row(total)])+
     '<p class="growth-note">横轴为用户入组周。支付按入组后 7 日内至少支付一次计数，每个用户只进入一周。周度与切片明细均为合成数据，按原实验全样本总量校准。</p>');
+}
+function experimentReleaseChecks(limit) {
+  return [
+    `退款：两组使用同一售后观察窗，扩大样本后复查退款率增幅是否 ≤${pp(limit)}。`,
+    '净毛利：补齐分组商品成本、退款金额和优惠补贴，按同一口径与预先约定的阈值比较。',
+    '客诉：补齐同一观察窗的客诉事件及分母，按预先约定的阈值比较客诉率。'
+  ];
 }
 function experimentPanel() {
   const x=recommendationExperiment,r=recommendationMetrics();
@@ -210,7 +226,11 @@ function experimentPanel() {
     <span class="growth-note">独立离线模拟样本 · 模拟入组 2024.05.06–2024.06.02 · 全样本口径</span>
     <h3>支付用户率显著提升，建议继续小流量验证</h3>
     <p>对照组 <strong>${pct(r.control)}</strong> → 实验组 <strong>${pct(r.test)}</strong>，绝对提升 <strong>${pp(r.change)}</strong>。</p>
-    <p>放量判断：退款证据不足，净毛利和客诉待核验。先完成护栏复查，再决定是否扩大上线。</p>
+    <div class="experiment-release-checks">
+      <strong>放量前的复查条件</strong>
+      <p>全样本仅观察到 ${r.refundEvents} 个退款事件，净毛利和客诉待核验。现阶段继续小流量验证。</p>
+      <ul>${experimentReleaseChecks(x.refundLimit).map(item=>`<li>${item}</li>`).join('')}</ul>
+    </div>
     <button class="btn hero-primary" data-experiment-action>记录下一轮验证计划</button>
   </div>`)+
   panel('实验设计',table(['设计项','当前方案'],[
@@ -245,7 +265,7 @@ function experimentHandoff() {
     evidence:`${x.name}：支付用户率 ${pct(r.control)} → ${pct(r.test)}（${pp(r.change)}，差异显著）；退款率点估计 ${pp(r.refundChange)}，合计 ${r.refundEvents} 个退款事件。净毛利与客诉待核验。`,
     draft:{
       action:'保持小流量验证，扩大退款观察样本，补齐两组净毛利与客诉数据后复评放量。',
-      kpi:`复查支付用户率与显著性；同窗核验退款率增幅 ≤${pp(x.refundLimit)}；确认净毛利与客诉达到预先约定的阈值。`
+      kpi:['复查全样本支付用户率与显著性。',...experimentReleaseChecks(x.refundLimit)].join(' ')
     }
   };
 }
