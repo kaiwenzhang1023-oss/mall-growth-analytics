@@ -243,3 +243,37 @@ main > .notice { margin-bottom:14px; }
   .skill-links a,.result-link,.module-card,.module-arrow,.method-chevron { transition:none; }
   .method-item[open] .method-body { animation:none; }
 }
+
+/* 首页摘要以旺季成交额为主，明细折叠表仍可独立核对。 */
+.panel:has(> .result-highlights) { border-top:3px solid #315d85; }
+#content > .panel:has(> .result-highlights) > h2 { font-size:20px; }
+.result-context { display:flex; flex-wrap:wrap; align-items:center; gap:6px 12px; color:#526980; font-size:13px; }
+.result-context b { padding:3px 8px; border-radius:5px; background:#e6eef7; color:#335671; }
+.result-highlights { display:grid; grid-template-columns:1.4fr repeat(3,minmax(0,1fr)); gap:10px; margin:12px 0; padding:0; list-style:none; }
+.result-highlights li { display:grid; align-content:center; gap:4px; min-width:0; padding:10px 12px; border:1px solid #e1eaf2; border-radius:8px; background:#f5f8fc; font-size:13px; }
+.result-highlights li:first-child { background:#eaf2fa; border-color:#c4d7ea; }
+.result-highlights strong { color:#17613a; font-size:21px; line-height:1.2; font-variant-numeric:tabular-nums; }
+.result-highlights strong small { font-size:12px; }
+.result-highlights li:first-child strong { color:#1f4f78; font-size:32px; }
+
+/* 分析视角独立于筛选区，整块可切换。 */
+.analysis-view-options { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.analysis-view-options button { padding:10px 12px; border:1px solid #d9e4ef; border-bottom:3px solid transparent; border-radius:8px; background:#f8fafc; text-align:left; color:#344b63; font:inherit; cursor:pointer; }
+.analysis-view-options button strong,.analysis-view-options button span,.analysis-view-options button small { display:block; }
+.analysis-view-options button small { margin-top:2px; color:#526980; }
+.analysis-mobile-note { display:none; }
+.analysis-view-options button strong { font-size:16px; }
+.analysis-view-options button span { margin-top:3px; color:#526980; font-size:13px; }
+.analysis-view-options button:hover { background:#f0f5fa; }
+.analysis-view-options button[aria-pressed="true"] { background:#eaf2fa; border-color:#b8cfe3; border-bottom-color:#35668e; color:#1c4a70; }
+.analysis-view-options button:focus-visible,.segment-picker select:focus-visible { outline:2px solid #35668e; outline-offset:2px; }
+
+.segment-picker { gap:8px 14px; margin:0 0 14px; padding:10px 12px; border:1px solid #e1e9f1; border-radius:8px; background:#f7f9fc; color:#244769; }
+.segment-picker .inputbox { width:min(220px,100%); max-width:100%; min-height:42px; padding-inline:10px; background:#fff; }
+
+@media(max-width:640px) {
+  .result-highlights { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .result-highlights li:first-child { grid-column:1/-1; }
+  .analysis-view-options button span,.analysis-view-options button small { display:none; }
+  .analysis-mobile-note { display:block; }
+}
