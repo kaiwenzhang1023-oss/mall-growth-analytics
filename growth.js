@@ -222,7 +222,20 @@ function home() {
     <h2>商城经营分析与增长决策工作台</h2>
     <p class="portfolio-capabilities">面向摩托装备商城运营与数据分析，回答增长来自哪里、交易在哪一步流失、策略效果如何验证。</p>
     <p class="portfolio-role">项目经历 2022.03–2024.12 · 交互演示使用 2022.10–2024.09 模拟数据</p>
-    <div class="hero-actions"><button class="btn hero-primary" data-tab="0">进入经营总览</button><button class="btn" data-tab="5" data-case-year>查看推荐增长案例</button></div>
+    <div class="portfolio-entry-grid" role="group" aria-label="作品在线演示">
+      <section class="portfolio-entry">
+        <h3>Web 经营决策工作台</h3>
+        <p>七个业务模块，覆盖经营监控、增长实验、异常诊断与经营行动。</p>
+        <a class="btn hero-primary entry-action" href="${moduleHash(0)}" data-tab="0">进入 Web 工作台 <span aria-hidden="true">→</span></a>
+      </section>
+      <section class="portfolio-entry">
+        <h3>Power BI 交互分析看板</h3>
+        <p>六个主题报表，支持商品 ABC、交易漏斗、Cohort、RFM、多触点归因与经营诊断。</p>
+        <a class="btn hero-primary entry-action" href="https://app.powerbi.com/view?r=eyJrIjoiZjQ4NTU1YzMtYjRmNC00MDAxLThiMTUtZTMwMDNkYWFlMmU2IiwidCI6IjE2ZGVlZGU4LTc5ZTktNGUzMy05OWU2LTlkOGQzOTQyZDc5NiIsImMiOjEwfQ%3D%3D&amp;pageName=d61f12aa1c3d199239d5" target="_blank" rel="noopener noreferrer">打开 Power BI 看板（新标签页） <span aria-hidden="true">↗</span></a>
+      </section>
+    </div>
+    <p class="portfolio-disclaimer">两种交互演示均使用模拟数据。</p>
+    <div class="hero-actions"><button class="btn" data-tab="5" data-case-year>查看推荐增长案例</button></div>
   </section>
   ${panel('项目概述与交付范围',`<div class="project-overview">
     <section><h3>业务背景</h3><p>面向摩托装备商城，为运营、类目操盘手、分析师提供一站式经营决策看板，定位流失、验证增长策略，支撑大促复盘与异常处置。</p></section>
